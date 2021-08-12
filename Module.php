@@ -8,7 +8,7 @@ use yii\base\BootstrapInterface;
 
 class Module extends WebModule implements BootstrapInterface
 {
-
+    public $key;
     public $icon = '';
 
     public function bootstrap($app)
@@ -21,32 +21,6 @@ class Module extends WebModule implements BootstrapInterface
         );
 
 
-        $app->setComponents([
-            'robotsTxt' => [
-                'class' => 'panix\mod\seo\components\RobotsTxt',
-                'userAgent' => [
-                    // Disallow url for all bots
-                    '*' => [
-                        'Disallow' => [
-                            ['/admin'],
-                            '/assets'
-                        ],
-                        'Allow' => [
-                            ['/api/doc/index'],
-                        ],
-                    ],
-                    // Block a specific image from Google Images
-                    'Googlebot-Image' => [
-                        'Disallow' => [
-                            // All images on your site from Google Images
-                            '/',
-                            // Files of a specific file type (for example, .gif)
-                            '/*.gif$',
-                        ],
-                    ],
-                ],
-            ],
-        ]);
 
 
     }
