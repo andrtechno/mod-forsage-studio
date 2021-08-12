@@ -1,0 +1,24 @@
+{
+    "name": "panix/mod-forsage",
+    "description": "Module forsage",
+    "keywords": ["pixelion-cms", "forsage"],
+    "homepage": "https://github.com/andrtechno/mod-seo",
+    "type": "pixelion-module",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "PIXELION CMS",
+            "email": "dev@pixelion.com.ua",
+            "homepage": "https://pixelion.com.ua"
+        }
+    ],
+    "require": {
+        "panix/engine": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "panix\\mod\\forsage\\": ""
+        }
+    }
+}
