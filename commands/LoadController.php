@@ -2,21 +2,26 @@
 
 namespace panix\mod\forsage\commands;
 
-use app\modules\forsage\components\ForsageProductImage;
-use app\modules\forsage\components\Image;
+use panix\mod\forsage\components\ForsageProductImage;
+use panix\mod\forsage\components\Image;
 use panix\mod\shop\models\Category;
 use Yii;
-use app\modules\forsage\components\ForsageExternalFinder;
-use app\modules\forsage\components\ForsageStudio;
+use panix\mod\forsage\components\ForsageExternalFinder;
+use panix\mod\forsage\components\ForsageStudio;
 use panix\engine\CMS;
 use panix\engine\console\controllers\ConsoleController;
 use panix\mod\shop\models\Attribute;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Product;
 use panix\mod\shop\components\ExternalFinder;
+use yii\console\ExitCode;
+use yii\console\widgets\Table;
 use yii\helpers\Console;
 use yii\helpers\FileHelper;
 use yii\httpclient\Client;
+
+ignore_user_abort(1);
+set_time_limit(0);
 
 /**
  * Class LoadController
@@ -25,6 +30,16 @@ use yii\httpclient\Client;
  */
 class LoadController extends ConsoleController
 {
+
+    protected $categoriesPathCache = [],
+        $productTypeCache = [],
+        $brandCache = [],
+        $supplierCache = [],
+        $currencyCache = [];
+
+    private $subCategoryPattern = '/\\/((?:[^\\\\\/]|\\\\.)*)/';
+    protected $rootCategory = null;
+
     private $fs;
     /**
      * @var ExternalFinder
@@ -47,31 +62,35 @@ class LoadController extends ConsoleController
         $errors = (isset($props['error'])) ? true : false;
 //print_r($props);die;
 
-        $model = Product::findOne(['custom_id' => $product['id']]);
+        $model = Product::findOne(['forsage_id' => $product['id']]);
 
         if (!$product['quantity']) {
             if ($model) {
-                $model->delete();
+                if(Yii::$app->getModule('forsage')->outStockDelete){
+                    self::log('Product delete ' . $product['id']);
+                    $model->delete();
 
-                if (isset($props['images'])) {
-                    foreach ($props['images'] as $imageUrl) {
-                        $this->external->deleteExternal($this->external::OBJECT_IMAGE, $product['id'] . '/' . basename($imageUrl));
+                    if (isset($props['images'])) {
+                        foreach ($props['images'] as $imageUrl) {
+                            $this->external->deleteExternal($this->external::OBJECT_IMAGE, $product['id'] . '/' . basename($imageUrl));
+                        }
                     }
                 }
+
             }
             return false;
         }
 
         if (!$model) {
             $model = new Product();
-            $model->type_id = 1;
-            $model->custom_id = $product['id'];
+            $model->type_id = Yii::$app->getModule('forsage')->type_id;
+            $model->forsage_id = $product['id'];
             $model->sku = $product['vcode'];
         }
         $categoryName = $this->generateCategory($product);
         $model->name = $this->generateProductName($product);
         $model->slug = CMS::slug($model->name);
-
+        $model->unit = Yii::$app->getModule('forsage')->unit;
 
         $model->switch = ($product['quantity']) ? 1 : 0;
         if ($product['quantity']) {
@@ -142,74 +161,158 @@ class LoadController extends ConsoleController
 
         //set image
         if (isset($props['images'])) {
-            $hashList=[];
-          //  $nameList=[];
-            foreach ($model->getImages() as $im){
+            $hashList = [];
+            //  $nameList=[];
+            //print_r($model->getImages()->all());die;
+            foreach ($model->getImages()->all() as $im) {
+                self::log('delete Image ' . $im->filename);
                 $im->delete();
-              //  $hashList[] = md5_file(Yii::getAlias($im->path.'/'.$im->object_id.'/'.$im->filePath));
+                //  $hashList[] = md5_file(Yii::getAlias($im->path.'/'.$im->object_id.'/'.$im->filePath));
 
             }
-       //     print_r($hashList);
+            //     print_r($hashList);
             foreach ($props['images'] as $imageUrl) {
                 $hash = md5_file($imageUrl);
 //echo $hash.PHP_EOL;
                 //if(!in_array($hash,$hashList)){
 
 
-              //  $imageModel = $this->external->getObject($this->external::OBJECT_IMAGE, $hash);
-              //  $current_hash = md5_file(Yii::getAlias('@uploads/store/product/'.$model->id.'/'.$im->filePath));
-              //  echo $current_hash.PHP_EOL;
-              //  if (!$imageModel) {
-                    $res = $model->attachImage($imageUrl);
-                  //  if ($res) {
+                //  $imageModel = $this->external->getObject($this->external::OBJECT_IMAGE, $hash);
+                //  $current_hash = md5_file(Yii::getAlias('@uploads/store/product/'.$model->id.'/'.$im->filePath));
+                //  echo $current_hash.PHP_EOL;
+                //  if (!$imageModel) {
 
-                      //  $this->external->createExternalId($this->external::OBJECT_IMAGE, $model->id, $hash);
-                   // }
-               // }
-              //  }
+                self::log('attachImage ' . $imageUrl);
+                $res = $model->attachImage($imageUrl);
+
+
+                //  if ($res) {
+
+                //  $this->external->createExternalId($this->external::OBJECT_IMAGE, $model->id, $hash);
+                // }
+                // }
+                //  }
             }
         }
 
     }
 
+    /**
+     * Информация о товаре: "forsage/load/product <id>"
+     * @param $id
+     */
     public function actionProduct($id)
     {
 
 
-      //  file_put_contents('example.txt', 'Наглый коричневый лисёнок прыгает вокруг ленивой собаки.');
+        //  file_put_contents('example.txt', 'Наглый коричневый лисёнок прыгает вокруг ленивой собаки.');
 
-       // $path = 'https://forsage-studio.com/storage/export/excel_images/19532/paliament-com/paliament/d826-1_img2.jpg';
-      //  $path = Yii::getAlias('@uploads/store/product/1/d826-1_img2.jpg');
+        // $path = 'https://forsage-studio.com/storage/export/excel_images/19532/paliament-com/paliament/d826-1_img2.jpg';
+        //  $path = Yii::getAlias('@uploads/store/product/1/d826-1_img2.jpg');
         //  $path = Yii::getAlias('@uploads/store/product/1/shhA7w7z6O.jpg');
-       // echo md5_file ($path);
+        // echo md5_file ($path);
 
-      // die;
+        // die;
         $this->fs = new ForsageStudio();
         $response = $this->fs->getProduct($id);
-        // print_r($response);die;
-        $this->execute($response);
+      //  print_r($response);die;
+        $test= $this->execute($response);
+
+        print_r($test);die;
     }
 
-    public function actionChanges()
+    /**
+     * Изменение товаров
+     * @param int $diff Example milliseconds "86400" (Default 3600 hour)
+     */
+    public function actionChanges($diff = 3600)
     {
         $this->fs = new ForsageStudio();
-
-        $response = $this->fs->getChanges();
+        $diff = eval('return '.$diff.';');
+        $response = $this->fs->getChanges($diff);
         if ($response) {
-            $count = Product::find()->where(['custom_id' => $response['product_ids']])->count();
+            $count = Product::find()->where(['forsage_id' => $response['product_ids']])->count();
             $i = 0;
 
             Console::startProgress($i, $count, ' - ', 100);
             foreach ($response['products'] as $index => $item) {
-                if ($item['supplier']['id'] == 448) {
-                    $result = $this->execute($item);
-                    $i++;
-                    Console::updateProgress($i, $count, $item['vcode'] . ' - ');
-                }
-
+                $result = $this->execute($item);
+                $i++;
+                Console::updateProgress($i, $count, $item['vcode'] . ' - ');
 
             }
             Console::endProgress(false);
+        }
+    }
+
+
+    /**
+     * Изменение товаров (forsage/load/changes-supplier <SUPPLIER_ID> <START> <END> --interactive=1|0)
+     *
+     * @param int $supplier Forsage supplier id
+     * @param int $start Example milliseconds "86400 or 3600*2" (Default 3600)
+     * @param int $end Example milliseconds "86400 or 3600*2" (Default 0) Furmula ($end - $start)
+     */
+    public function actionChangesSupplier($supplier, $start = 3600, $end = 0)
+    {
+        $start = eval('return '.$start.';');
+        $end = eval('return '.$end.';');
+        $end_date = time() + $end;
+        $start_date = time() - $start;
+
+        //$this->stdout('Current date: ' . date('Y-m-d H:i:s', time()).PHP_EOL, Console::FG_BLUE);
+        //$this->stdout('Start date: ' . date('Y-m-d H:i:s', $start_date).PHP_EOL, Console::FG_PURPLE);
+        //$this->stdout('End date: ' . date('Y-m-d H:i:s', $end_date).PHP_EOL, Console::FG_PURPLE);
+
+        $table = new Table();
+
+
+        echo $table //->setHeaders(['Current date', 'Start date', 'End date'])
+            ->setRows([
+            ['Current date',date('Y-m-d H:i:s', time())],
+            ['Start date',date('Y-m-d H:i:s', $start_date)],
+            ['End date',date('Y-m-d H:i:s', $end_date)],
+            ])
+            ->run();
+
+        $confirmMsg = '';
+        $confirmMsg .= "Starting confirm: says (yes|no)\r\n";
+
+        // confirm
+        $confirm = $this->prompt($confirmMsg, [
+            "required" => true,
+            "default" => "Default: no",
+        ]);
+
+
+
+
+        if (strncasecmp($confirm, "y", 1) === 0) {
+            $this->fs = new ForsageStudio();
+
+            $response = $this->fs->getChanges($start, $end);
+            if ($response) {
+                $count = Product::find()->where(['forsage_id' => $response['product_ids']])->count();
+                $i = 0;
+
+                Console::startProgress($i, $count, ' - ', 100);
+                foreach ($response['products'] as $index => $item) {
+                    if ($item['supplier']['id'] == $supplier) {
+                        $result = $this->execute($item);
+                        $i++;
+                        Console::updateProgress($i, $count, $item['vcode'] . ' - ');
+                    }
+                }
+                Console::endProgress(false);
+            }
+        } else {
+            echo "\r\n";
+            $this->stdout("--- Cancelled! ---\r\nYou can specify the paths using:");
+            echo "\r\n\r\n";
+            $this->stdout("    php cmd forsage/load/<action> <supplier_id> --interactive=1|0", Console::FG_BLUE);
+            echo "\r\n";
+
+            return ExitCode::OK;
         }
     }
 
@@ -221,23 +324,51 @@ class LoadController extends ConsoleController
         $response = $this->fs->getProducts();
 
         if ($response) {
-           // $count = Product::find()->where(['custom_id' => $response['product_ids']])->count();
-           // $i = 0;
+            // $count = Product::find()->where(['forsage_id' => $response['product_ids']])->count();
+            // $i = 0;
 
-           // Console::startProgress($i, $count, ' - ', 100);
+            // Console::startProgress($i, $count, ' - ', 100);
             foreach ($response as $index => $item) {
                 if ($item['supplier']['id'] == 448) {
                     $result = $this->execute($item);
                     //$i++;
-                  //  Console::updateProgress($i, $count, $item['vcode'] . ' - ');
+                    //  Console::updateProgress($i, $count, $item['vcode'] . ' - ');
                 }
 
 
             }
-           // Console::endProgress(false);
-        }else{
+            // Console::endProgress(false);
+        } else {
             echo 'error';
         }
+    }
+
+    /**
+     * Получить все товары поставщика forsage/load/supplier-products 123
+     * @param $id
+     */
+    public function actionSupplierProducts($id)
+    {
+
+        $this->fs = new ForsageStudio();
+
+        $response = $this->fs->getSupplierProductIds($id, ['quantity' => 1]);
+        if ($response) {
+
+            $count = count($response);
+            $i = 0;
+            Console::startProgress($i, $count, ' - ', 100);
+            foreach ($response as $index => $item) {
+                $product = $this->fs->getProduct($item);
+                self::log('get product');
+                $this->execute($product);
+                self::log('end product');
+                $i++;
+                Console::updateProgress($i, $count, ' - ');
+            }
+            Console::endProgress(false);
+        }
+
     }
 
     public function actionIndex()
@@ -365,7 +496,7 @@ class LoadController extends ConsoleController
 
             if ($characteristic['name'] == 'Валюта продажи') {
                 if ($characteristic['value'] == 'доллар') {
-                    $result['currency_id'] = 2;
+                    $result['currency_id'] = 3;
                 }
 
             }
@@ -557,13 +688,6 @@ class LoadController extends ConsoleController
 
     }
 
-    protected $categoriesPathCache = [],
-        $productTypeCache = [],
-        $manufacturerCache = [],
-        $supplierCache = [],
-        $currencyCache = [];
-    private $subCategoryPattern = '/\\/((?:[^\\\\\/]|\\\\.)*)/';
-    protected $rootCategory = null;
 
     /**
      * Get category id by path. If category not exits it will new one.
@@ -639,7 +763,7 @@ class LoadController extends ConsoleController
 
     public function buildPathToTempFile($fileName, $dir)
     {
-
+        self::log('start buildPathToTempFile');
         $dir = str_replace($this->replacesDirsName, '', $dir);
         $dir = mb_strtolower($dir);
         if (!$dir && !$fileName) {
@@ -665,6 +789,7 @@ class LoadController extends ConsoleController
             ->setOutputFile($fh)
             ->send();
 
+        self::log('end buildPathToTempFile');
         if ($response->isOk) {
             // print_r($response);die;
             return $newFilePath;
@@ -673,4 +798,10 @@ class LoadController extends ConsoleController
         }
 
     }
+
+    public static function log($mssage)
+    {
+        Yii::info($mssage);
+    }
+
 }

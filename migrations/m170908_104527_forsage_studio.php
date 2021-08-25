@@ -10,6 +10,7 @@
  */
 
 use yii\db\Migration;
+use panix\mod\shop\models\Product;
 
 class m170908_104527_forsage_studio extends Migration
 {
@@ -29,11 +30,14 @@ class m170908_104527_forsage_studio extends Migration
         $this->createIndex('object_id', '{{%forsage_studio}}', 'object_id');
         $this->createIndex('object_type', '{{%forsage_studio}}', 'object_type');
         $this->createIndex('external_id', '{{%forsage_studio}}', 'external_id');
+        $this->addColumn(Product::tableName(),'forsage_id','int');
+
     }
 
     public function down()
     {
         $this->dropTable('{{%forsage_studio}}');
+        $this->dropColumn(Product::tableName(),'forsage_id');
     }
 
 }

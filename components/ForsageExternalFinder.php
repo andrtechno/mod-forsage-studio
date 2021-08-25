@@ -9,8 +9,8 @@ namespace panix\mod\forsage\components;
 use panix\mod\images\models\Image;
 use panix\mod\shop\models\Attribute;
 use panix\mod\shop\models\AttributeOption;
+use panix\mod\shop\models\Brand;
 use panix\mod\shop\models\Category;
-use panix\mod\shop\models\Manufacturer;
 use panix\mod\shop\models\Product;
 use yii\db\Query;
 
@@ -21,7 +21,7 @@ class ForsageExternalFinder
     const OBJECT_TYPE_CATEGORY = 1;
     const OBJECT_TYPE_ATTRIBUTE = 2;
     const OBJECT_TYPE_PRODUCT = 3;
-    const OBJECT_TYPE_MANUFACTURER = 4;
+    const OBJECT_TYPE_BRAND = 4;
     const OBJECT_TYPE_ATTRIBUTE_OPTION = 5;
     const OBJECT_TYPE_IMAGE = 6;
     const OBJECT_TYPE_SUPPLIER = 7;
@@ -88,8 +88,8 @@ class ForsageExternalFinder
                     return Product::findOne($query['object_id']);
                     break;
 
-                case self::OBJECT_TYPE_MANUFACTURER:
-                    return Manufacturer::findOne($query['object_id']);
+                case self::OBJECT_TYPE_BRAND:
+                    return Brand::findOne($query['object_id']);
                     break;
 
                 case self::OBJECT_TYPE_ATTRIBUTE_OPTION:
