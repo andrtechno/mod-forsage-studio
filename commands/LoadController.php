@@ -279,15 +279,10 @@ class LoadController extends ConsoleController
         $confirmMsg .= "Starting confirm: says (yes|no)\r\n";
 
         // confirm
-        $confirm = $this->prompt($confirmMsg, [
-            "required" => true,
-            "default" => "Default: no",
-        ]);
+        $confirm = $this->confirm($confirmMsg, false);
 
 
-
-
-        if (strncasecmp($confirm, "y", 1) === 0) {
+        if ($confirm) {
             $this->fs = new ForsageStudio();
 
             $response = $this->fs->getChanges($start, $end);
@@ -314,6 +309,7 @@ class LoadController extends ConsoleController
 
             return ExitCode::OK;
         }
+
     }
 
 
