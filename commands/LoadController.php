@@ -800,4 +800,19 @@ class LoadController extends ConsoleController
         Yii::info($mssage);
     }
 
+    public function actionExportContacts(){
+        $this->fs = new ForsageStudio();
+        $suppliers = $this->fs->getSuppliers();
+        $list[] = ['Имя', 'Телефон', 'E-mail', 'Адрес'];
+        $fp = fopen(Yii::getAlias('@runtime/').'suppliers_contact.csv', 'w');
+        foreach ($suppliers['suppliers'] as $supplier){
+            $list[] = [$supplier['company'], $supplier['phone'], $supplier['email'], $supplier['address']];
+        }
+        asort($list);
+        foreach ($list as $fields) {
+            fputcsv($fp, $fields);
+        }
+        fclose($fp);
+    }
+
 }
