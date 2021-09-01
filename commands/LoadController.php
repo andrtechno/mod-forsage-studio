@@ -803,14 +803,15 @@ class LoadController extends ConsoleController
     public function actionExportContacts(){
         $this->fs = new ForsageStudio();
         $suppliers = $this->fs->getSuppliers();
-        $list[] = ['Имя', 'Телефон', 'E-mail', 'Адрес'];
-        $fp = fopen(Yii::getAlias('@runtime/').'suppliers_contact.csv', 'w');
+
         foreach ($suppliers['suppliers'] as $supplier){
-            $list[] = [$supplier['company'], $supplier['phone'], $supplier['email'], $supplier['address']];
+            $list[] = [$supplier['company'], str_replace('+','',CMS::phoneFormat($supplier['phone'])), $supplier['phone'], $supplier['email'], $supplier['address']];
         }
         asort($list);
+        $fp = fopen(Yii::getAlias('@runtime/').'suppliers_contact.csv', 'w');
+        fputcsv($fp, ['Имя', 'Телефон', 'Телефон формат', 'E-mail', 'Адрес'],';');
         foreach ($list as $fields) {
-            fputcsv($fp, $fields);
+            fputcsv($fp, $fields,';');
         }
         fclose($fp);
     }
