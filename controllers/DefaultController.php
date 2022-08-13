@@ -19,7 +19,7 @@ class DefaultController extends Controller
         $fs = new ForsageStudio();
         $input = json_decode($fs->input, true);
 
-
+        Yii::info('actionWebhook','forsage');
 
 
         if ($input) {
@@ -29,6 +29,7 @@ class DefaultController extends Controller
                 foreach ($input['product_ids'] as $product_id) {
                     $product = $fs->getProduct($product_id);
 
+                    Yii::info('GetProduct '.$product_id,'forsage');
 
                     //$access = ($onlySuppliers) ? in_array($product['supplier']['id'], $onlySuppliers) : false;
 
@@ -37,7 +38,6 @@ class DefaultController extends Controller
                         file_put_contents(Yii::getAlias('@runtime') . '/forsage_webhook.txt', "[add:{$product_id}]", FILE_APPEND);
                         // $fs->execute($product);
                     }
-
                 }
             }else{
                 if (isset($input['product_ids'])) {
@@ -50,20 +50,8 @@ class DefaultController extends Controller
 
                     }
                 }
-
             }
-
-
         }
-
-
-    }
-
-    public function actionTest()
-    {
-        Yii::info('ss', 'forsage');
-        echo 's';
-        die;
     }
 
 }
