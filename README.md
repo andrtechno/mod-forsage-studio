@@ -38,6 +38,19 @@ to the require section of your `composer.json` file.
         'apiKey' => 'YOUR_API_KEY'
     ],
 ],
+'components' => [
+    'log' => [
+        ..
+        'targets'=>[
+            [
+                'class' => 'panix\engine\log\FileTarget',
+                'logFile' => '@runtime/logs/forsage.log',
+                'categories' => ['forsage'],
+                'logVars' => []
+            ]
+        ]
+    ],
+]
 ```
 
 #### Mobule props
