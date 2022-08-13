@@ -2,23 +2,22 @@
 
 namespace panix\mod\forsage\commands;
 
-use panix\mod\forsage\components\ForsageProductImage;
-use panix\mod\forsage\components\Image;
-use panix\mod\shop\models\Category;
+
 use Yii;
-use panix\mod\forsage\components\ForsageExternalFinder;
 use panix\mod\forsage\components\ForsageStudio;
 use panix\engine\CMS;
 use panix\engine\console\controllers\ConsoleController;
 use panix\mod\shop\models\Attribute;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Product;
+use panix\mod\shop\models\Category;
 use panix\mod\shop\components\ExternalFinder;
 use yii\console\ExitCode;
 use yii\console\widgets\Table;
 use yii\helpers\Console;
 use yii\helpers\FileHelper;
 use yii\httpclient\Client;
+
 
 ignore_user_abort(1);
 set_time_limit(0);
@@ -143,12 +142,70 @@ class LoadController extends ConsoleController
         }*/
 
 
-        $model->main_category_id = $this->getCategoryByPath($categoryName);
 
+        $full_name_category = '';
+        if (isset($props['categories'][0])) {
+            $main_category = $props['categories'][0];
+            $full_name_category = $main_category;
+            if (isset($props['categories'][1])) {
+                $sub_category = $props['categories'][1];
+                $full_name_category .= '/' . $sub_category;
+            }
+        }
+        //$model->main_category_id = $this->getCategoryByPath($categoryName);
+        $model->main_category_id = $this->getCategoryByPath($full_name_category);
         $model->save(false);
 
         $this->processCategories($model, $model->main_category_id);
 
+       // print_r($props);die;
+        /*if (isset($props['categories'][0])) {
+            $mainCategory = $this->external->getObject($this->external::OBJECT_MAIN_CATEGORY, $props['categories'][0]);
+            if (!$mainCategory) {
+                $mainCategory = new Category;
+                $mainCategory->name = $props['categories'][0];
+                $mainCategory->slug = CMS::slug($props['categories'][0]);
+                $mainCategory->appendTo(Category::findOne(1));
+                echo 'Created main category: ' . $props['categories'][0] . PHP_EOL;
+                $this->external->createExternalId($this->external::OBJECT_MAIN_CATEGORY, $mainCategory->id, $props['categories'][0]);
+            } else {
+                $mainCategory->saveNode(false);
+            }
+
+            if (isset($props['categories'][1])) {
+                $modelCategory = $this->external->getObject($this->external::OBJECT_CATEGORY, $full_name_category);
+                //$modelCategory = ForsageExternalFinder::getObject(ForsageExternalFinder::OBJECT_TYPE_CATEGORY, $full_name_category);
+                if (!$modelCategory) {
+                    $modelCategory = new Category;
+                    $modelCategory->name = $props['categories'][1];
+                    $modelCategory->slug = CMS::slug($modelCategory->name);
+                    echo 'Created sub category: ' . $full_name_category . PHP_EOL;
+                    $modelCategory->appendTo($mainCategory);
+                    $this->external->createExternalId($this->external::OBJECT_CATEGORY, $modelCategory->id, $full_name_category);
+                } else {
+
+                    $modelCategory->saveNode(false);
+                }
+            }
+
+            $categoryId = $this->external->getObject($this->external::OBJECT_CATEGORY, $full_name_category, false);
+
+            if (is_numeric($categoryId)) {
+                $category1 = Category::findOne($categoryId);
+                $categories = [];
+                $subCategory = $category1->ancestors()->excludeRoot()->all();
+                if (isset($subCategory)) {
+                    foreach ($subCategory as $cat) {
+                        $categories[] = $cat->id;
+                    }
+                    $model->setCategories($categories, $categoryId);
+                    //$this->processCategories($model, $model->main_category_id);
+                } else {
+                    $model->setCategories([$categoryId], $categoryId);
+                    //$this->processCategories($model, $model->main_category_id);
+                }
+            }
+        }*/
 
         if (isset($props['attributes'])) {
             foreach ($props['attributes'] as $prop) {
@@ -157,6 +214,20 @@ class LoadController extends ConsoleController
             if (isset($props['in_box'])) {
                 $this->attributeData($model, 'Количество в ящике', $props['in_box']);
             }
+        }
+
+
+
+
+
+        if(isset($props['attributes'][6]['value'])){
+
+
+            $explode = explode('-', $props['attributes'][6]['value']);
+            $size_min = $explode[0];
+            $size_max = $explode[1];
+            //print_r($size_min);
+            //print_r($size_max);
         }
 
         //set image
@@ -324,12 +395,13 @@ class LoadController extends ConsoleController
             // $i = 0;
 
             // Console::startProgress($i, $count, ' - ', 100);
+
             foreach ($response as $index => $item) {
-                if ($item['supplier']['id'] == 448) {
+                //if ($item['supplier']['id'] == 448) {
                     $result = $this->execute($item);
                     //$i++;
                     //  Console::updateProgress($i, $count, $item['vcode'] . ' - ');
-                }
+                //}
 
 
             }
@@ -606,33 +678,47 @@ class LoadController extends ConsoleController
                     }
                     if ($characteristic['id'] == 35) { //Валюта продажи
                         if ($characteristic['value'] == 'доллар') {
-                            $result['currency_id'] = 2;
+                            $result['currency_id'] = 3;
                         }
                     }
                     if ($characteristic['id'] == 25) { //Цена продажи
-                        $result['price'] = $characteristic['value'];
+                        $result['price'] = trim($characteristic['value']);
                     }
                     if ($characteristic['id'] == 47) { //Старая цена продажи
-                        $result['price_old'] = $characteristic['value'];
+                        $result['price_old'] = trim($characteristic['value']);
                     }
                     if ($characteristic['id'] == 24) { //Цена закупки
-                        $result['price_purchase'] = $characteristic['value'];
+                        $result['price_purchase'] = trim($characteristic['value']);
                     }
                     if ($characteristic['id'] == 8) {
-                        $result['in_box'] = $characteristic['value'];
+                        $result['in_box'] = trim($characteristic['value']);
                     }
                     // if ($characteristic['id'] == 39) { //Пол
 
                     //  $result['sex'] = $characteristic['value'];
 
                     // }//attributes
-                    if (!in_array($characteristic['id'], array(3, 8, 13, 24, 25, 29, 33, 34, 35, 38, 46, 45, 47, 53))) {
+                    if (!in_array($characteristic['id'], [3, 8, 13, 24, 25, 29, 33, 34, 35, 38, 46, 45, 47, 53])) {
                         $result['attributes'][$characteristic['id']] = [
                             'name' => $characteristic['name'],
-                            'value' => $characteristic['value']
+                            'value' => trim($characteristic['value'])
                         ];
                     }
+                    if ($characteristic['name'] == 'Пол') { //женщины, мужчины и дети
+                        //if (in_array($productData['type_id'], array(self::TYPE_BOOTS_KIDS, self::TYPE_BOOTS))) {
+                            if ($characteristic['value'] == 'женщины') {
+                                $result['categories'][0] = 'Женская';
+                            } elseif ($characteristic['value'] == 'мужчины') {
+                                $result['categories'][0] = 'Мужская';
+                            } elseif ($characteristic['value'] == 'дети') {
+                                $result['categories'][0] = 'Детская';
 
+                            } else {
+                                $result['success'] = false;
+                                $result['error'][] = 'Пол не задан';
+                            }
+                        //}
+                    }
 
                     // }
                 }
@@ -643,13 +729,13 @@ class LoadController extends ConsoleController
                 $result['error'][] = 'Unknown product images error';
                 // self::log('Unknown product images error');
             }
-            /* if ($this->getChildCategory($product)) {
-                 $result['categories'][1] = $this->getChildCategory($product);
-             } else {
-                 $result['success'] = false;
-                 $result['error'][] = 'Unknown product category child error';
-                // self::log('Unknown product category child error');
-             }*/
+            if ($this->getChildCategory($product)) {
+                $result['categories'][1] = $this->getChildCategory($product);
+            } else {
+                $result['success'] = false;
+                $result['error'][] = 'Unknown product category child error';
+                self::log('Unknown product category child error');
+            }
         }
 
 
@@ -661,7 +747,25 @@ class LoadController extends ConsoleController
         //  return (!isset($result['error']))?$result:false;
         return $result;
     }
+    public function getChildCategory($product)
+    {
 
+        if (isset($product['category'])) {
+            //if (in_array($product->category->id, array(self::CATEGORY_BOOTS, self::CATEGORY_CLOTHES_ACCESSORIES))) {
+                if (isset($product['category']['child'])) {
+                    //if ($product->category->child->name == 'Сандалии') {
+                    //    return 'Сандали';
+                    //}
+                    return $product['category']['child']['name'];
+                } else {
+                    self::log('no find category child, Product ID: ' . $product['id']);
+                }
+            //}
+        } else {
+            self::log('no find category, Product ID: ' . $product['id']);
+        }
+        return false;
+    }
     private function generateProductName($product)
     {
         $name = '';
@@ -738,6 +842,7 @@ class LoadController extends ConsoleController
             if (!$model) {
                 $model = new Category;
                 $model->name_ru = end($object);
+                $model->name_uk = end($object);
                 $model->slug = CMS::slug($model->name_ru);
                 $model->appendTo($parent);
             }

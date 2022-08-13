@@ -12,7 +12,7 @@
 use yii\db\Migration;
 use panix\mod\shop\models\Product;
 
-class m170908_104527_forsage_studio extends Migration
+class m180917_193214_forsage_studio extends Migration
 {
 
 

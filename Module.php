@@ -36,4 +36,6 @@ class Module extends WebModule implements BootstrapInterface
             'url' => ['/admin/forsage'],
         ];
     }
+
+
 }

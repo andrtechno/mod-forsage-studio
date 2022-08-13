@@ -144,7 +144,7 @@ class ForsageStudio extends Component
         $day = 86400;
         //for CRON
 
-        $start_date = time() - $hour * 1;
+        $start_date = time() - $hour * 1 - (86400);
         $end_date = time();
         /*if (!$start_data) {
             $start_date = strtotime(date('Y-m-d'));// - 86400 * 1;

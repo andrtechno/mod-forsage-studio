@@ -6,7 +6,7 @@ namespace panix\mod\forsage\components;
  * Find objects by external id
  */
 
-use panix\mod\images\models\Image;
+use Yii;
 use panix\mod\shop\models\Attribute;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Brand;
@@ -40,7 +40,7 @@ class ForsageExternalFinder
         if ($object_id) {
             $query = \Yii::$app->db->createCommand()
                 //->select("*")
-                ->from('{{%exchange_forsage}}')
+                ->from('{{%forsage_studio}}')
                 ->where('object_type=:type AND external_id=:externalId AND object_id=:object_id', array(
                     ':type' => $type,
                     ':externalId' => $externalId,
@@ -52,7 +52,7 @@ class ForsageExternalFinder
 
             $query = (new Query())
                 ->select('*')
-                ->from('{{%exchange_forsage}}')
+                ->from('{{%forsage_studio}}')
                 ->where('object_type=:type AND external_id=:externalId', [
                     ':type' => $type,
                     ':externalId' => $externalId
@@ -111,8 +111,8 @@ class ForsageExternalFinder
     public static function removeObject($type, $external_id, $loadModel = true)
     {
 
-        Yii::app()->db->createCommand()->delete(
-            '{{exchange_forsage}}',
+        Yii::$app->db->createCommand()->delete(
+            '{{forsage_studio}}',
             'object_type=:type AND external_id=:external_id',
             array(
                 ':type' => $type,
@@ -128,8 +128,8 @@ class ForsageExternalFinder
 
     public static function removeObjectByPk($type, $obj_id)
     {
-        $query = Yii::app()->db->createCommand()->delete(
-            '{{exchange_forsage}}',
+        $query = Yii::$app->db->createCommand()->delete(
+            '{{forsage_studio}}',
             'object_type=:type AND object_id=:object_id',
             array(
                 ':type' => $type,
