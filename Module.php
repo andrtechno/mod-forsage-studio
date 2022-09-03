@@ -14,12 +14,15 @@ class Module extends WebModule implements BootstrapInterface
     public $type_id = 1;
     public $outStockDelete = true;
     public $onlySuppliers = [];
+    public $hookKey;
+
+    public $excludeCategories = [];
 
     public function bootstrap($app)
     {
         $app->urlManager->addRules(
             [
-                'forsage/webhook' => 'forsage/default/webhook',
+                'forsage/webhook/<hookKey:\w+>' => 'forsage/default/webhook',
             ],
             true
         );

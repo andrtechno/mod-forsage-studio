@@ -35,6 +35,7 @@ to the require section of your `composer.json` file.
 'modules' => [
     'forsage' => [
         'class' => 'panix\mod\forsage\Module',
+        'hookKey' => 'YOUR_SECRET_HASH_KEY'
         'apiKey' => 'YOUR_API_KEY'
     ],
 ],
