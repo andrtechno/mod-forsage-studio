@@ -283,6 +283,22 @@ class ForsageStudio extends Component
         return false;
     }
 
+    public function getBrands()
+    {
+        $url = "https://forsage-studio.com/api/get_brands";
+        $response = $this->conn_curl($url, []);
+        if (isset($response['success'])) {
+            if ($response['success'] == 'true') {
+                return $response['brands'];
+            } else {
+                self::log(" - " . $response['message']);
+            }
+        } else {
+            self::log('Method getBrands Error success: ');
+        }
+        return false;
+    }
+
     /**
      * @param $url
      * @param array $params
@@ -321,7 +337,9 @@ class ForsageStudio extends Component
 
         $props = $this->getProductProps($this->product);
         $errors = (isset($props['error'])) ? true : false;
-
+        if (!$props['success']) {
+            return false;
+        }
 
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
 
@@ -425,23 +443,27 @@ class ForsageStudio extends Component
         if (isset($this->product['brand'])) {
             if (isset($this->product['brand']['name'])) {
                 if ($this->product['brand']['name'] != 'No brand') {
-                    $manufacturer = $this->external->getObject($this->external::OBJECT_BRAND, $this->product['brand']['name']);
-                    if (!$manufacturer) {
-                        $manufacturer = new Brand;
-                        $manufacturer->name_ru = $this->product['brand']['name'];
-                        $manufacturer->name_uk = $this->product['brand']['name'];
-                        $manufacturer->slug = CMS::slug($manufacturer->name);
+                    $brand = Brand::findOne(['forsage_id' => $this->product['brand']['id']]);
+                    //echo $this->product['brand']['id'];die;
+                    //$manufacturer = $this->external->getObject($this->external::OBJECT_BRAND, $this->product['brand']['name']);
+                    if (!$brand) {
+                        $brand = new Brand;
+                        $brand->name_ru = $this->product['brand']['name'];
+                        $brand->name_uk = $this->product['brand']['name'];
+                        $brand->forsage_id = $this->product['brand']['id'];
+                        $brand->slug = CMS::slug($brand->name);
                         //$manufacturer->container = $product->supplier->address;
-                        $manufacturer->save(false);
-                        $this->external->createExternalId($this->external::OBJECT_BRAND, $manufacturer->id, $manufacturer->name);
+                        $brand->save(false);
+                        //$this->external->createExternalId($this->external::OBJECT_BRAND, $manufacturer->id, $manufacturer->name);
                     }
-                    $model->brand_id = $manufacturer->id;
+                    $model->brand_id = $brand->id;
                 }
             }
         }
 
 
-        if(!$model->save(false)){
+        if (!$model->save(false)) {
+            echo 'no save';
             return false;
         }
         $this->processCategories($model, $model->main_category_id);
@@ -494,8 +516,10 @@ class ForsageStudio extends Component
 
 
             $explode = explode('-', $props['attributes'][6]['value']);
+
             $size_min = (int)$explode[0];
-            $size_max = (int)$explode[1];
+            //$size_max = (int)$explode[1];
+
             $list2 = [
                 '0-20' => 'до 20',
                 '20-25' => '20-25',
@@ -550,9 +574,9 @@ class ForsageStudio extends Component
                 // }
                 //$res = $model->attachImage($imageUrl);
 
-                $ii=0;
-                while($res = $model->attachImage($imageUrl)){
-                    if($res != false || $ii == 5){
+                $ii = 0;
+                while ($res = $model->attachImage($imageUrl)) {
+                    if ($res != false || $ii == 5) {
                         break;
                     }
                     $ii++;
@@ -922,22 +946,19 @@ class ForsageStudio extends Component
     {
 
         if (isset($product['category'])) {
-            //if (in_array($product->category->id, array(self::CATEGORY_BOOTS, self::CATEGORY_CLOTHES_ACCESSORIES))) {
-            if (isset($product['category']['child'])) {
-                //if ($product->category->child->name == 'Сандалии') {
-                //    return 'Сандали';
-                //}
-                if (isset($product['category']['child']['descriptions'])) {
-                    //ukraine
-                    return $product['category']['child']['descriptions'][1]['name'];
-                } else {
-                    return $product['category']['child']['name'];
-                }
+            if (in_array($product['category']['id'], array(self::CATEGORY_BOOTS))) {
+                if (isset($product['category']['child'])) {
+                    if (isset($product['category']['child']['descriptions'])) {
+                        //ukraine lang
+                        return $product['category']['child']['descriptions'][1]['name'];
+                    } else {
+                        return $product['category']['child']['name'];
+                    }
 
-            } else {
-                self::log('no find category child, Product ID: ' . $product['id']);
+                } else {
+                    self::log('no find category child, Product ID: ' . $product['id']);
+                }
             }
-            //}
         } else {
             self::log('no find category, Product ID: ' . $product['id']);
         }

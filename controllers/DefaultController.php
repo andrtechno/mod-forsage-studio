@@ -25,7 +25,7 @@ class DefaultController extends Controller
         $input = json_decode($fs->input, true);
 
         if ($input) {
-            if(in_array('NewProduct',$input['change_type'])){
+            //if(in_array('NewProduct',$input['change_type'])){
                 foreach ($input['product_ids'] as $product_id) {
                     $product = $fs->getProduct($product_id);
 
@@ -33,29 +33,24 @@ class DefaultController extends Controller
 
                     //$access = ($onlySuppliers) ? in_array($product['supplier']['id'], $onlySuppliers) : false;
                     if ($product) {
+                        Yii::info('NewAddProduct '.$product_id,'forsage');
                         file_put_contents(Yii::getAlias('@runtime') . '/forsage_webhook.txt', "[add:{$product_id}]\n", FILE_APPEND);
-                        //file_put_contents(Yii::getAlias('@runtime') . '/forsage_webhook.txt', json_decode($product,true), FILE_APPEND);
                         $product->execute();
                     }
                 }
-            }else{
+            /*}else{
                 if (isset($input['product_ids'])) {
                     foreach ($input['product_ids'] as $product_id) {
-                        //if ($product) {
-                            //file_put_contents(Yii::getAlias('@runtime') . '/forsage_webhook.txt', "[update:{$product_id}]", FILE_APPEND);
-                            //$p = $fs->getProduct($product_id);
-                        //}
                         $product = $fs->getProduct($product_id);
                         Yii::info('GetProduct '.$product_id,'forsage');
                         if ($product) {
-
+                            Yii::info('AddProduct '.$product_id,'forsage');
                             file_put_contents(Yii::getAlias('@runtime') . '/forsage_webhook.txt', "[add:{$product_id}]\n", FILE_APPEND);
-                            //file_put_contents(Yii::getAlias('@runtime') . '/forsage_webhook.txt', json_decode($product,true), FILE_APPEND);
                             $product->execute();
                         }
                     }
                 }
-            }
+            }*/
         }else{
             Yii::info('Error input','forsage');
         }

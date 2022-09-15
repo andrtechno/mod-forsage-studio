@@ -35,7 +35,7 @@ class m180917_193214_forsage_studio extends Migration
         $this->addColumn(Product::tableName(),'forsage_id','int');
         $this->addColumn(Product::tableName(),'in_box','int');
         $this->addColumn(Supplier::tableName(),'forsage_id','int');
-        //$this->addColumn(Brand::tableName(),'forsage_id','int');
+        $this->addColumn(Brand::tableName(),'forsage_id','int');
 
         $this->createIndex('forsage_id', Product::tableName(), 'forsage_id');
         $this->createIndex('forsage_id', Supplier::tableName(), 'forsage_id');
@@ -49,7 +49,7 @@ class m180917_193214_forsage_studio extends Migration
         $this->dropColumn(Product::tableName(),'forsage_id');
         $this->dropColumn(Product::tableName(),'in_box');
         $this->dropColumn(Supplier::tableName(),'forsage_id');
-        //$this->dropColumn(Brand::tableName(),'forsage_id');
+        $this->dropColumn(Brand::tableName(),'forsage_id');
     }
 
 }
