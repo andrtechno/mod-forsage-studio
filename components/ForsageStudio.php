@@ -166,18 +166,11 @@ class ForsageStudio extends Component
 
     public function getChanges2($start = 3600, $end = 0)
     {
-        //for CRON
-        $end_date = time() - $end;
-        $start_date = time() - $start;
 
-        //products = "full" or "changes"
-        Yii::$app->controller->stdout('end_date ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
-        Yii::$app->controller->stdout('start_date ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
-        Yii::$app->controller->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
-        //die;
+
         $url = "https://forsage-studio.com/api/get_changes/";
-        $params['start_date'] = $start_date;
-        $params['end_date'] = $end_date;
+        $params['start_date'] = $start;
+        $params['end_date'] = $end;
         //$params['products'] = 'changes';
         //$params['quantity'] = 1;
 
@@ -195,52 +188,33 @@ class ForsageStudio extends Component
     }
 
     /**
-     * @param null $start_data
+     * @param int $start
+     * @param int $end
+     * @param array $params
      * @return bool|mixed
      * @throws \yii\base\InvalidConfigException
      * @throws \yii\httpclient\Exception
      */
-    public function getProducts($start_data = null)
+    public function getProducts($start = 3600, $end = 0, $params = [])
     {
 
-        $hour = 3600;
-        $day = 86400;
-        //for CRON
+        $params['start_date'] = $start;
+        $params['end_date'] = $end;
+        if(!isset($params['with_descriptions'])){
+            $params['with_descriptions'] = 1;
+        }
+        if(!isset($params['quantity'])){
+            $params['quantity'] = 1;
+        }
 
-        $start_date = time() - $hour * 1 - (86400);
-        $end_date = time();
-        /*if (!$start_data) {
-            $start_date = strtotime(date('Y-m-d'));// - 86400 * 1;
-        } else {
-            $start_date = strtotime($start_data);// - 86400 * 1;
-        }*/
-        //back days
-        // $start_date = $start_date; // - $day
-        // $end_date = $end_date;
-        // $start_date = strtotime(date('Y-m-d'));
-
-        echo date('Y-m-d H:i:s', $start_date) . PHP_EOL;
-        echo date('Y-m-d H:i:s', $end_date) . PHP_EOL;
-        //echo date('Y-m-d H:i:s',$end_date).PHP_EOL;
-        // die;
-        $start_date = strtotime('04-08-2022');
-        $end_date = strtotime('05-08-2022');
-
-
-        $params['start_date'] = $start_date;
-        $params['end_date'] = $end_date;
-        $params['with_descriptions'] = 1;
-        $params['quantity'] = 1;
 
         $url = "https://forsage-studio.com/api/get_products/";
 
         $response = $this->conn_curl($url, $params);
 
         if (isset($response['success'])) {
-            if ($response['success'] == true) {
-                echo count($response['products']);
-                die;
-                // return $response['products'];
+            if ($response['success']) {
+                return $response['products'];
             }
         } else {
             self::log('Method getProducts Error success');
@@ -337,9 +311,7 @@ class ForsageStudio extends Component
 
         $props = $this->getProductProps($this->product);
         $errors = (isset($props['error'])) ? true : false;
-        if (!$props['success']) {
-            return false;
-        }
+
 
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
 
@@ -359,6 +331,11 @@ class ForsageStudio extends Component
             return false;
         }
 
+        if (!$props['success']) {
+            self::log('Product success false ' . $this->product['id']);
+            return false;
+        }
+
         if (!$model) {
             $model = new Product();
             $model->type_id = Yii::$app->getModule('forsage')->type_id;
@@ -373,9 +350,9 @@ class ForsageStudio extends Component
 
         $model->switch = ($this->product['quantity']) ? 1 : 0;
         if ($this->product['quantity']) {
-            $model->availability = 1;//есть на складе
+            $model->availability = Product::STATUS_IN_STOCK; //есть на складе
         } else {
-            $model->availability = 2;//нет на складе
+            $model->availability = Product::STATUS_OUT_STOCK; //нет на складе
         }
         $model->discount = NULL;
 
@@ -463,7 +440,6 @@ class ForsageStudio extends Component
 
 
         if (!$model->save(false)) {
-            echo 'no save';
             return false;
         }
         $this->processCategories($model, $model->main_category_id);
@@ -479,41 +455,6 @@ class ForsageStudio extends Component
 
 
         if (isset($props['attributes'][6]['value'])) {
-            /*$explode = explode('-', $props['attributes'][6]['value']);
-            $size_min = (int)$explode[0];
-            $size_max = (int)$explode[1];
-            $list = [
-                '0-20' => 'до 20',
-                '20-25' => '20-25',
-                '26-31' => '26-31',
-                '27-32' => '27-32',
-                '31-36' => '31-36',
-                '32-37' => '32-37',
-                '36-41' => '36-41',
-                '39-44' => '39-44',
-                '40-45' => '40-45',
-                '41-46' => '41-46',
-                '45-99' => 'более 45'
-            ];
-            foreach ($list as $key => $l) {
-                $liste = explode('-', $key);
-                if ($liste[0] == $size_min) {
-                    $result = in_array($size_min, range($liste[0], $liste[1]));
-                    if ($result) {
-                        //echo $key;
-                        $this->attributeData($model, 'Размер', $l);
-                        break;
-                    }else{
-                        Yii::info('no size1 '.$this->product['id'],'forsage');
-                    }
-                }elseif($size_min < $liste[1]){
-                    $this->attributeData($model, 'Размер', $l);
-                    break;
-                }else{
-                    Yii::info('no size2 '.$this->product['id'],'forsage');
-                }
-            }*/
-
 
             $explode = explode('-', $props['attributes'][6]['value']);
 
@@ -569,18 +510,15 @@ class ForsageStudio extends Component
                 $im->delete();
             }
             foreach ($props['images'] as $imageUrl) {
-                //if(md5_file($imageUrl)){
-                //
-                // }
-                //$res = $model->attachImage($imageUrl);
+                $res = $model->attachImage($imageUrl);
 
-                $ii = 0;
+                /*$ii = 0;
                 while ($res = $model->attachImage($imageUrl)) {
                     if ($res != false || $ii == 5) {
                         break;
                     }
                     $ii++;
-                }
+                }*/
             }
         }
         //    $tr->commit();
@@ -847,6 +785,7 @@ class ForsageStudio extends Component
         // $productData = $this->getProductData($product);
 
         $result = false;
+        $result['success'] = true;
         if (isset($product['characteristics'])) {
             foreach ($product['characteristics'] as $characteristic) {
                 if (!empty($characteristic['value']) && ($characteristic['value'] != '-')) {

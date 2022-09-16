@@ -8,20 +8,26 @@ use yii\base\BaseObject;
 use yii\helpers\Console;
 use yii\queue\JobInterface;
 
-class ProductQueue extends BaseObject implements JobInterface
+class ProductIdQueue extends BaseObject implements JobInterface
 {
-    public $products;
+    public $product_ids;
 
 
     public function execute($queue)
     {
         $fs = new ForsageStudio();
-        $count = count($this->products);
+        $count = count($this->product_ids);
         $i = 0;
         Console::startProgress($i, $count, ' - ', 100);
-        foreach ($this->products as $product_id) {
+        foreach ($this->product_ids as $product_id) {
             $product = $fs->getProduct($product_id);
-            $product->execute();
+            if($product){
+                $exec = $product->execute();
+                //if($exec){
+
+                //}
+            }
+
             Console::updateProgress($i, $count, ' - ');
             $i++;
         }

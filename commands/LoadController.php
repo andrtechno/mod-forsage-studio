@@ -68,10 +68,15 @@ class LoadController extends ConsoleController
      */
     public function actionProduct($id)
     {
-        //print_r($this->fs->getProduct($id));
+        $product = $this->fs->getProduct($id);
+        $response = $product->execute();
+
         //die;
-        $response = $this->fs->getProduct($id)->execute();
-        //print_r($response);
+        //$response = $this->fs->getProduct($id)->execute();
+        print_r($response);
+
+
+die;
         return $response;
 
         $explode = explode('-', '37-42');
@@ -150,6 +155,14 @@ class LoadController extends ConsoleController
     {
         $start = eval('return ' . $start . ';');
         $end = eval('return ' . $end . ';');
+        //for CRON
+        $end_date = time() - $end;
+        $start_date = time() - $start;
+
+        //products = "full" or "changes"
+        Yii::$app->controller->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
+        Yii::$app->controller->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
+        Yii::$app->controller->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
 
         $response = $this->fs->getChanges2($start, $end);
 
@@ -238,24 +251,32 @@ class LoadController extends ConsoleController
     }
 
 
-    public function actionProducts()
+    public function actionProducts($start = 3600, $end = 0)
     {
-        $response = $this->fs->getProducts();
+        $start = eval('return ' . $start . ';');
+        $end = eval('return ' . $end . ';');
+        $end_date = time() - $end;
+        $start_date = time() - $start;
+
+        $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
+
+        $response = $this->fs->getProducts($start, $end);
 
         if ($response) {
-            // $count = Product::find()->where(['forsage_id' => $response['product_ids']])->count();
-            // $i = 0;
-            // Console::startProgress($i, $count, ' - ', 100);
+            $i = 0;
+            $count = count($response);
+            Console::startProgress($i, $count, ' - ', 100);
             foreach ($response as $index => $item) {
-                //if ($item['supplier']['id'] == 448) {
-                $result = $this->fs->execute($item);
-                //$i++;
-                //  Console::updateProgress($i, $count, $item['vcode'] . ' - ');
-                //}
+                $this->fs->product = $item;
+                $execute = $this->fs->execute();
+                $i++;
+                Console::updateProgress($i, $count, $item['id'] . ' - ');
             }
-            // Console::endProgress(false);
-        } else {
-            echo 'error';
+            Console::endProgress(false);
+        }else{
+            echo 'response empty';
         }
     }
 
