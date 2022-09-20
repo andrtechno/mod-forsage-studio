@@ -87,15 +87,17 @@ class ForsageStudio extends Component
 
     public function getRefbookCharacteristics()
     {
-        $url = "https://forsage-studio.com/api/get_refbook_characteristics"; //&start_date={$date}&end_date={$date}
-        $response = $this->conn_curl($url);
+        $url = "https://forsage-studio.com/api/get_refbook_characteristics";
+        $params['with_descriptions'] = 1;
+        $response = $this->conn_curl($url, $params);
         if (isset($response['success'])) {
-            if ($response['success'] == 'true') {
+            if ($response['success']) {
                 return $response['characteristics'];
             }
         } else {
             self::log('Method getRefbookCharacteristics Error success');
         }
+        return false;
     }
 
 
@@ -200,10 +202,10 @@ class ForsageStudio extends Component
 
         $params['start_date'] = $start;
         $params['end_date'] = $end;
-        if(!isset($params['with_descriptions'])){
+        if (!isset($params['with_descriptions'])) {
             $params['with_descriptions'] = 1;
         }
-        if(!isset($params['quantity'])){
+        if (!isset($params['quantity'])) {
             $params['quantity'] = 1;
         }
 
@@ -310,9 +312,9 @@ class ForsageStudio extends Component
         //try {
 
         $props = $this->getProductProps($this->product);
+        print_r($props);die;
         $errors = (isset($props['error'])) ? true : false;
-
-
+        self::log('executeID ' . $this->product['id']);
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
 
         if (!$this->product['quantity']) {
@@ -320,11 +322,11 @@ class ForsageStudio extends Component
                 if (Yii::$app->getModule('forsage')->outStockDelete) {
                     self::log('Product delete ' . $this->product['id']);
                     $model->delete();
-                    if (isset($props['images'])) {
-                        foreach ($props['images'] as $imageUrl) {
-                            $this->external->deleteExternal($this->external::OBJECT_IMAGE, $this->product['id'] . '/' . basename($imageUrl));
-                        }
-                    }
+                    //if (isset($props['images'])) {
+                    //    foreach ($props['images'] as $imageUrl) {
+                    //        $this->external->deleteExternal($this->external::OBJECT_IMAGE, $this->product['id'] . '/' . basename($imageUrl));
+                    //     }
+                    // }
                 }
 
             }
@@ -382,6 +384,12 @@ class ForsageStudio extends Component
         $model->currency_id = (isset($props['currency_id'])) ? $props['currency_id'] : NULL;
         $model->video = (isset($props['video'])) ? $props['video'] : NULL;
 
+        if (isset($prop['description'])) {
+            $model->short_description_ru = $prop['description'];
+            $model->short_description_uk = $prop['description'];
+            $model->full_description_ru = $prop['description'];
+            $model->full_description_uk = $prop['description'];
+        }
 
         $full_name_category = '';
 
@@ -399,9 +407,6 @@ class ForsageStudio extends Component
 
         if (isset($this->product['supplier'])) {
             $supplier = Supplier::findOne(['forsage_id' => $this->product['supplier']['id']]);
-
-
-            //$supplier = $this->external->getObject($this->external::OBJECT_SUPPLIER, $this->product['supplier']['company']);
             if (!$supplier) {
                 $supplier = new Supplier();
                 $supplier->name = $this->product['supplier']['company'];
@@ -410,7 +415,6 @@ class ForsageStudio extends Component
                 $supplier->phone = CMS::phoneFormat($this->product['supplier']['phone']);
                 $supplier->forsage_id = $this->product['supplier']['id'];
                 $supplier->save(false);
-                //$this->external->createExternalId($this->external::OBJECT_SUPPLIER, $supplier->id, $supplier->name);
             }
             $model->supplier_id = $supplier->id;
 
@@ -421,23 +425,19 @@ class ForsageStudio extends Component
             if (isset($this->product['brand']['name'])) {
                 if ($this->product['brand']['name'] != 'No brand') {
                     $brand = Brand::findOne(['forsage_id' => $this->product['brand']['id']]);
-                    //echo $this->product['brand']['id'];die;
-                    //$manufacturer = $this->external->getObject($this->external::OBJECT_BRAND, $this->product['brand']['name']);
                     if (!$brand) {
                         $brand = new Brand;
                         $brand->name_ru = $this->product['brand']['name'];
                         $brand->name_uk = $this->product['brand']['name'];
                         $brand->forsage_id = $this->product['brand']['id'];
                         $brand->slug = CMS::slug($brand->name);
-                        //$manufacturer->container = $product->supplier->address;
                         $brand->save(false);
-                        //$this->external->createExternalId($this->external::OBJECT_BRAND, $manufacturer->id, $manufacturer->name);
+
                     }
                     $model->brand_id = $brand->id;
                 }
             }
         }
-
 
         if (!$model->save(false)) {
             return false;
@@ -445,8 +445,9 @@ class ForsageStudio extends Component
         $this->processCategories($model, $model->main_category_id);
 
         if (isset($props['attributes'])) {
-            foreach ($props['attributes'] as $prop) {
-                $this->attributeData($model, $prop['name'], $prop['value']);
+            foreach ($props['attributes'] as $id => $prop) {
+                $this->attributeDataNew($model, $prop);
+                //$this->attributeData($model, $prop['name'], $prop['value']);
             }
             if (isset($props['in_box'])) {
                 $this->attributeData($model, 'Количество в ящике', $props['in_box']);
@@ -501,26 +502,17 @@ class ForsageStudio extends Component
         }
 
 
-        // $this->attributeDataList($model, 'TEST', ['test1', 'test2']);
-
         //set image
         if (isset($props['images'])) {
-            $hashList = [];
             foreach ($model->getImages()->all() as $im) {
                 $im->delete();
             }
-            foreach ($props['images'] as $imageUrl) {
-                $res = $model->attachImage($imageUrl);
-
-                /*$ii = 0;
-                while ($res = $model->attachImage($imageUrl)) {
-                    if ($res != false || $ii == 5) {
-                        break;
-                    }
-                    $ii++;
-                }*/
+            foreach ($props['images'] as $file) {
+                $model->attachImage($file);
             }
         }
+
+
         //    $tr->commit();
         //} catch (Exception $e) {
         //    self::log('no add ' . $this->product['id']);
@@ -683,47 +675,60 @@ class ForsageStudio extends Component
         $model->setCategories($categories, $main_category_id);
     }
 
-    private function attributeData2($model, $attributeName, $attributeValue)
+
+    /**
+     * @param $model
+     * @param $data
+     */
+    private function attributeDataNew($model, $data)
     {
-        if (isset($attributeValue)) {
-            $attrsdata = array();
-            $attributeModel = $this->external->getObject($this->external::OBJECT_ATTRIBUTE, $attributeName);
+
+        if (isset($data['descriptions'])) {
+            $attributeModel = Attribute::findOne(['forsage_id' => $data['id']]);
             if (!$attributeModel) {
-
-                //if not exists create attribute
                 $attributeModel = new Attribute();
-                $attributeModel->title = $attributeName;
-                $attributeModel->name = CMS::slug($attributeModel->title, '_');
-                $attributeModel->type = Attribute::TYPE_RADIO_LIST;
+                $attributeModel->title_ru = $data['descriptions'][0]['name'];
+                $attributeModel->title_uk = $data['descriptions'][1]['name'];
+                $attributeModel->name = CMS::slug($data['name'], '_');
+                $attributeModel->type = Attribute::TYPE_DROPDOWN;
+                $attributeModel->forsage_id = $data['id'];
+                //if (count($attributeValues) > 1) {
+                $attributeModel->use_in_filter = 1;
+                $attributeModel->select_many = 1;
+                //}
                 $attributeModel->save(false);
-                $this->external->createExternalId($this->external::OBJECT_ATTRIBUTE, $attributeModel->id, $attributeModel->title);
-            }
-            if ($attributeModel) {
 
-                // if ($params['isFilter']) {
-                $option = AttributeOption::find();
-                //$option->joinWith('translations');
-                $option->where(['attribute_id' => $attributeModel->id]);
-                //$option->andWhere([AttributeOptionTranslate::tableName() . '.value' => $attributeValue]);
-                $option->andWhere(['value' => $attributeValue]);
-                $opt = $option->one();
-                if (!$opt)
-                    $opt = $this->addOptionToAttribute($attributeModel->id, $attributeValue);
-
-                // print_r($opt);die;
-                $attrsdata[$attributeModel->name] = $opt->id;
-                //$attrsdata[$attributeModel->name] =  $attributeValue;
-                //  }
 
             }
+            $attrsdata = [];
+            //foreach ($attributeValues as $attributeValue) {
+
+            $option = AttributeOption::find();
+            //$option->joinWith('translations');
+            $option->where(['attribute_id' => $attributeModel->id]);
+            //$option->andWhere([AttributeOptionTranslate::tableName() . '.value' => $attributeValue]);
+            $option->andWhere(['value' => $data['descriptions'][0]['value']]);
+            $opt = $option->one();
+            if (!$opt)
+                $opt = $this->addOptionToAttributeNew($attributeModel->id, $data['values']);
+
+            $attrsdata[$attributeModel->name][] = $opt->id;
+            //$attrsdata[$attributeModel->name] =  $attributeValue;
+
+            // }
 
             if (!empty($attrsdata)) {
-
                 $model->setEavAttributes($attrsdata, true);
             }
         }
     }
 
+
+    /**
+     * @param $model
+     * @param $attributeName
+     * @param $attributeValues
+     */
     private function attributeData($model, $attributeName, $attributeValues)
     {
         if (!is_array($attributeValues)) {
@@ -732,6 +737,7 @@ class ForsageStudio extends Component
         if ($attributeValues) {
 
             $attributeModel = $this->external->getObject($this->external::OBJECT_ATTRIBUTE, $attributeName);
+            //$attributeModel = Attribute::findOne(['forsage_id'=>$id]); //IN DEV
             if (!$attributeModel) {
                 //if not exists create attribute
                 $attributeModel = new Attribute();
@@ -769,12 +775,36 @@ class ForsageStudio extends Component
         }
     }
 
+
+    public function addOptionToAttributeNew($attribute_id, $value)
+    {
+
+        // Add option
+        $option = new AttributeOption;
+        $option->attribute_id = $attribute_id;
+        if (is_array($value)) {
+            $option->value = $value[0]['value'];
+            $option->value_uk = $value[1]['value'];
+            $option->value_en = $value[0]['value'];
+        } else {
+            $option->value = $value;
+            $option->value_uk = $value;
+            $option->value_en = $value;
+        }
+
+        $option->save(false);
+        $this->external->createExternalId($this->external::OBJECT_ATTRIBUTE_OPTION, $option->id, $option->value);
+        return $option;
+    }
+
     public function addOptionToAttribute($attribute_id, $value)
     {
         // Add option
         $option = new AttributeOption;
         $option->attribute_id = $attribute_id;
         $option->value = $value;
+        $option->value_uk = $value;
+        $option->value_en = $value;
         $option->save(false);
         $this->external->createExternalId($this->external::OBJECT_ATTRIBUTE_OPTION, $option->id, $option->value);
         return $option;
@@ -809,18 +839,29 @@ class ForsageStudio extends Component
                     if ($characteristic['id'] == 24) { //Цена закупки
                         $result['price_purchase'] = trim($characteristic['value']);
                     }
+                    if ($characteristic['id'] == 1) { //Описание
+                        $result['description'] = trim($characteristic['value']);
+                    }
                     if ($characteristic['id'] == 8) {
+                        $result['in_box_new'] = [
+                            'name' => $characteristic['name'],
+                            'value' => trim($characteristic['value'])
+                        ];
                         $result['in_box'] = trim($characteristic['value']);
                     }
                     // if ($characteristic['id'] == 39) { //Пол
 
                     //  $result['sex'] = $characteristic['value'];
 
-                    // }//attributes
-                    if (!in_array($characteristic['id'], [3, 8, 13, 24, 25, 29, 33, 34, 35, 38, 46, 45, 47, 53])) {
+                    // }
+
+                    //attributes
+                    if (!in_array($characteristic['id'], [1, 3, 8, 13, 24, 25, 29, 33, 34, 35, 38, 46, 45, 47, 53])) {
                         $result['attributes'][$characteristic['id']] = [
+                            'id' => $characteristic['id'],
                             'name' => $characteristic['name'],
-                            'value' => trim($characteristic['value'])
+                            'value' => trim($characteristic['value']),
+                            'descriptions' => $characteristic['descriptions'],
                         ];
                     }
                     if ($characteristic['id'] == 39) { //женщины, мужчины и дети (Пол)

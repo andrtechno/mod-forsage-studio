@@ -13,6 +13,8 @@ use yii\db\Migration;
 use panix\mod\shop\models\Product;
 use panix\mod\shop\models\Supplier;
 use panix\mod\shop\models\Brand;
+use panix\mod\shop\models\Attribute;
+use panix\mod\shop\models\AttributeOption;
 
 class m180917_193214_forsage_studio extends Migration
 {
@@ -36,9 +38,13 @@ class m180917_193214_forsage_studio extends Migration
         $this->addColumn(Product::tableName(),'in_box','int');
         $this->addColumn(Supplier::tableName(),'forsage_id','int');
         $this->addColumn(Brand::tableName(),'forsage_id','int');
+        $this->addColumn(Attribute::tableName(),'forsage_id','int');
+        $this->addColumn(AttributeOption::tableName(),'forsage_id','int');
 
         $this->createIndex('forsage_id', Product::tableName(), 'forsage_id');
         $this->createIndex('forsage_id', Supplier::tableName(), 'forsage_id');
+        $this->createIndex('forsage_id', Attribute::tableName(), 'forsage_id');
+        $this->createIndex('forsage_id', AttributeOption::tableName(), 'forsage_id');
         //$this->createIndex('forsage_id', Brand::tableName(), 'forsage_id');
 
     }
@@ -50,6 +56,8 @@ class m180917_193214_forsage_studio extends Migration
         $this->dropColumn(Product::tableName(),'in_box');
         $this->dropColumn(Supplier::tableName(),'forsage_id');
         $this->dropColumn(Brand::tableName(),'forsage_id');
+        $this->dropColumn(Attribute::tableName(),'forsage_id');
+        $this->dropColumn(AttributeOption::tableName(),'forsage_id');
     }
 
 }

@@ -2,6 +2,7 @@
 
 namespace panix\mod\forsage\controllers;
 
+use panix\mod\forsage\components\ProductByIdQueue;
 use Yii;
 use yii\base\Controller;
 use panix\mod\forsage\components\ForsageStudio;
@@ -23,21 +24,16 @@ class DefaultController extends Controller
 
         if ($input) {
             //if(in_array('NewProduct',$input['change_type'])){
-            if(isset($input['product_ids'])){
-                Yii::info('push: ' . implode(',',$input['product_ids']), 'forsage');
-            }else{
+            if (isset($input['product_ids'])) {
+                Yii::info('push: ' . implode(',', $input['product_ids']), 'forsage');
+            } else {
                 Yii::info('push no ids: ', 'forsage');
             }
 
             foreach ($input['product_ids'] as $product_id) {
-                $product = $fs->getProduct($product_id);
-                if ($product) {
-                    if ($product->execute()) {
-                        Yii::info('addProduct ' . $product_id, 'forsage');
-                    } else {
-                        Yii::info('NotAddProduct  ' . $product_id, 'forsage');
-                    }
-                }
+                Yii::$app->queue->push(new ProductByIdQueue([
+                    'product' => $product_id,
+                ]));
             }
             /*}else{
                 if (isset($input['product_ids'])) {

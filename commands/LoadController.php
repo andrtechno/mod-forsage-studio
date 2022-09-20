@@ -2,10 +2,6 @@
 
 namespace panix\mod\forsage\commands;
 
-
-use panix\mod\forsage\components\ProductQueue;
-use panix\mod\forsage\components\ProductQueue2;
-use panix\mod\shop\components\ProductPriceHistoryQueue;
 use panix\mod\shop\models\Brand;
 use panix\mod\shop\models\Supplier;
 use Yii;
@@ -13,16 +9,13 @@ use panix\mod\forsage\components\ForsageStudio;
 use panix\engine\CMS;
 use panix\engine\console\controllers\ConsoleController;
 use panix\mod\shop\models\Attribute;
-use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Product;
-use panix\mod\shop\models\Category;
 use panix\mod\shop\components\ExternalFinder;
 use yii\console\ExitCode;
 use yii\console\widgets\Table;
 use yii\helpers\BaseFileHelper;
 use yii\helpers\Console;
 use yii\helpers\FileHelper;
-use yii\helpers\Url;
 use yii\httpclient\Client;
 
 
@@ -69,14 +62,10 @@ class LoadController extends ConsoleController
     public function actionProduct($id)
     {
         $product = $this->fs->getProduct($id);
+
         $response = $product->execute();
-
-        //die;
-        //$response = $this->fs->getProduct($id)->execute();
         print_r($response);
-
-
-die;
+        die;
         return $response;
 
         $explode = explode('-', '37-42');
@@ -275,7 +264,7 @@ die;
                 Console::updateProgress($i, $count, $item['id'] . ' - ');
             }
             Console::endProgress(false);
-        }else{
+        } else {
             echo 'response empty';
         }
     }
@@ -287,6 +276,14 @@ die;
     public function actionSupplierProducts($id)
     {
         $response = $this->fs->getSupplierProductIds($id, ['quantity' => 1]);
+
+        foreach ($response as $index => $item) {
+            if($index == 108){
+                print_r($item);
+                break;
+            }
+        }
+        die;
         if ($response) {
 
             $count = count($response);
@@ -337,104 +334,6 @@ die;
 
     public $replacesDirsName = array('.', ' ');
 
-    public function getOptionsProduct__($characteristics, $changes = 0)
-    {
-
-        $result = [];
-        // $result['image'] = false;
-        $result['hasError'] = true;
-        $result['errors'] = [];
-        $result['images'] = [];
-        //$sex = false;
-        //$type = false;
-
-        foreach ($characteristics as $characteristic) {
-            if ($characteristic['name'] == 'Фото 1') {
-                $result['hasError'] = false;
-                $result['image'] = $characteristic['value'];
-                $result['images'][] = $characteristic['value'];
-            }
-            if ($characteristic['name'] == 'Фото 2') {
-                $result['hasError'] = false;
-                $result['image'] = $characteristic['value'];
-                $result['images'][] = $characteristic['value'];
-            }
-            if ($characteristic['id'] == 8) { // Пар в ящике
-                $result['in_box'] = $characteristic['value'];
-            }
-            if ($characteristic['name'] == 'Поставщик') {
-                $result['supplier_name'] = $characteristic['value'];
-                $result['supplier_id'] = $characteristic['id'];
-            }
-
-            if ($characteristic['name'] == 'Цена продажи') {
-                $result['price'] = $characteristic['value'];
-            }
-            if ($characteristic['name'] == 'Цена закупки') {
-                $result['price_purchase'] = $characteristic['value'];
-            }
-            if ($characteristic['name'] == 'Размерная сетка') {
-                $result['size'] = str_replace(' - ', '-', $characteristic['value']);
-            }
-
-            if ($characteristic['name'] == 'Цвет') {
-                if (!empty($characteristic['value'])) {
-                    $result['color'] = $characteristic['value'];
-                }
-            }
-            if ($characteristic['name'] == 'Материал изделия') {
-                if (!empty($characteristic['value'])) {
-                    $result['material_ware'] = $characteristic['value'];
-                }
-            }
-            if ($characteristic['name'] == 'Материал подкладки') {
-                if (!empty($characteristic['value'])) {
-                    $result['material_lining'] = $characteristic['value'];
-                }
-            }
-            if ($characteristic['name'] == 'Материал подошвы') {
-                if (!empty($characteristic['value'])) {
-                    $result['material_foot'] = $characteristic['value'];
-                }
-            }
-            if ($characteristic['name'] == 'Страна') {
-                if (!empty($characteristic['value'])) {
-                    $result['country'] = $characteristic['value'];
-                }
-            }
-
-
-            if ($characteristic['name'] == 'Валюта продажи') {
-                if ($characteristic['value'] == 'доллар') {
-                    $result['currency_id'] = 3;
-                }
-
-            }
-            if ($characteristic['name'] == 'Сезон') {
-                if (!empty($characteristic['value'])) {
-                    if (isset($this->getSeasonData($characteristic['value'])->name)) {
-                        $result['season'] = $this->getSeasonData($characteristic['value'])->name;
-                    } else {
-                        $result['errors'][$characteristic['name']] = 'Не правильный';
-                        $result['hasError'] = true;
-                    }
-                } else {
-                    $result['errors'][$characteristic['name']] = "Пустой";
-                    $result['hasError'] = true;
-                }
-
-            }
-
-
-        }
-        if (!isset($result['price'])) {
-            $result['hasError'] = true;
-            $result['errorMessages']['Цена'] = 'Не найдена.';
-        }
-
-
-        return $result;
-    }
 
     private function getSeasonData__($id)
     {
@@ -513,6 +412,45 @@ die;
         fclose($fp);
     }
 
+    public function actionRefbooks()
+    {
+        $refbooks = $this->fs->getRefbookCharacteristics();
+        print_r($refbooks);die;
+        foreach ($refbooks as $ref) {
+            $attribute = Attribute::findOne(['title_ru' => $ref['name']]);
+            if ($attribute) {
+
+                if ($ref['descriptions']) {
+                    $attribute->title_uk = $ref['descriptions'][1]['name'];
+                    $attribute->title_ru = $ref['descriptions'][0]['name'];
+                } else {
+                    $attribute->title_uk = $ref['name'];
+                    $attribute->title_ru = $ref['name'];
+                }
+
+                $attribute->forsage_id = $ref['id'];
+                $attribute->save(false);
+
+                /*foreach ($ref['values'] as $value) {
+                    $option = AttributeOption::findOne(['value' => $value['value']]);
+                    if ($option) {
+                        if (isset($value['descriptions'][1])) {
+                            $option->value = $value['descriptions'][0]['name'];
+                            $option->value_uk = (isset($value['descriptions'][1])) ? $value['descriptions'][1]['name'] : $value['descriptions'][0]['name'];
+                            //$option->forsage_id = $value['id'];
+                            $option->save(false);
+
+                        } else {
+                            $option->value = $value['value'];
+                            $option->value_uk = $value['value'];
+                            //$option->forsage_id = $value['id'];
+                            $option->save(false);
+                        }
+                    }
+                }*/
+            }
+        }
+    }
 
     public function actionTest()
     {
@@ -554,7 +492,8 @@ die;
     {
 
         $suppliers = $this->fs->getSuppliers();
-        $cur_suppliers = Supplier::find()->all();
+        $cur_suppliers = Supplier::find()->where('`forsage_id` IS NOT NULL')->all();
+
         $forsage_list = [];
         $cur_forsage_list = [];
         foreach ($suppliers['suppliers'] as $supplier) {
@@ -570,6 +509,7 @@ die;
 
         //$res1 = array_intersect($forsage_list, $cur_forsage_list);
         $res2 = array_diff($cur_forsage_list, $forsage_list);
+
         foreach ($res2 as $supplier_id) {
             $sup = Supplier::findOne(['forsage_id' => $supplier_id]);
             if ($sup) {
@@ -577,27 +517,27 @@ die;
                 foreach ($products as $product) {
                     $product->delete();
                 }
-                //$dels = Product::deleteAll(['supplier_id'=>$sup->id]); //не удаляет фотки
+                $sup->delete();
             }
 
-
         }
-        //print_r($res2);
     }
+
     public function actionNoImg()
     {
         $products = Product::find()->limit(10000)->offset(40000)->all();
-        foreach ($products as $product){
-            if(!$product->getImages()->count()){
+        foreach ($products as $product) {
+            if (!$product->getImages()->count()) {
                 //echo Url::to($product->getUrl()).PHP_EOL;
                 $ff = $this->fs->getProduct($product->forsage_id);
 
-                  if($ff){
-                      $ff->execute();
-                  }
+                if ($ff) {
+                    $ff->execute();
+                }
             }
         }
     }
+
     public function actionRemoveImg()
     {
         $files = glob(Yii::getAlias('@uploads/store/product/*'));

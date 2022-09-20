@@ -12,7 +12,6 @@ class ProductIdQueue extends BaseObject implements JobInterface
 {
     public $product_ids;
 
-
     public function execute($queue)
     {
         $fs = new ForsageStudio();
@@ -23,9 +22,6 @@ class ProductIdQueue extends BaseObject implements JobInterface
             $product = $fs->getProduct($product_id);
             if($product){
                 $exec = $product->execute();
-                //if($exec){
-
-                //}
             }
 
             Console::updateProgress($i, $count, ' - ');
