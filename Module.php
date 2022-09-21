@@ -22,7 +22,7 @@ class Module extends WebModule implements BootstrapInterface
     {
         $app->urlManager->addRules(
             [
-                'forsage/webhook/<hookKey:\w+>' => 'forsage/default/webhook',
+                'forsage/webhook/<hook:\w+>' => 'forsage/default/webhook',
             ],
             true
         );

@@ -464,9 +464,6 @@ class LoadController extends ConsoleController
                 $products = $this->fs->getSupplierProductIds($supplier['id'], ['quantity' => 1]);
                 foreach ($products as $product) {
                     $test = $this->fs->getProduct($product);
-                    /*Yii::$app->queue->push(new ProductQueue2([
-                        'product' => $test->product,
-                    ]));*/
                     $test->execute();
                 }
                 Console::updateProgress($i, $count, ' - ');
@@ -479,9 +476,6 @@ class LoadController extends ConsoleController
         //print_r($products);die;
         foreach ($products as $product) {
             $test = $this->fs->getProduct($product);
-            Yii::$app->queue->push(new ProductQueue2([
-                'product' => $test->product,
-            ]));
         }*/
 
 
