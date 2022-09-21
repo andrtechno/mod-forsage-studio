@@ -149,11 +149,11 @@ class LoadController extends ConsoleController
         $start_date = time() - $start;
 
         //products = "full" or "changes"
-        Yii::$app->controller->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
-        Yii::$app->controller->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
-        Yii::$app->controller->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
 
-        $response = $this->fs->getChanges2($start, $end);
+        $response = $this->fs->getChanges2($start_date, $end_date);
 
         if ($response) {
             $count = count($response['product_ids']);
@@ -162,7 +162,6 @@ class LoadController extends ConsoleController
             Console::startProgress($i, $count, ' - ', 100);
             foreach ($response['product_ids'] as $index => $product) {
                 $product2 = $this->fs->getProduct($product);
-                //print_r($product);die;
                 if ($product2) {
                     $product2->execute();
                 }

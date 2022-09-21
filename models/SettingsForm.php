@@ -2,10 +2,8 @@
 
 namespace panix\mod\forsage\models;
 
-use Yii;
+use panix\engine\CMS;
 use panix\engine\SettingsModel;
-use yii\helpers\Html;
-use yii\web\UploadedFile;
 
 class SettingsForm extends SettingsModel
 {
@@ -14,15 +12,17 @@ class SettingsForm extends SettingsModel
     protected $module = 'forsage';
 
     public $out_stock_delete;
+    public $apikey;
+    public $hook_key;
 
 
     public function rules()
     {
         return [
-            //[['per_page'], "required"],
+            [['hook_key','apikey'], "required"],
             //[['product_related_bilateral', 'group_attribute', 'smart_bc', 'smart_title'], 'boolean'],
             //[['label_expire_new', 'added_to_cart_count'], 'integer'],
-            //[['added_to_cart_period'], 'string'],
+            [['apikey','hook_key'], 'string'],
             [['out_stock_delete'], 'boolean'],
 
         ];
@@ -35,6 +35,8 @@ class SettingsForm extends SettingsModel
     {
         return [
             'out_stock_delete' => true,
+            'apikey' => '',
+            'hook_key' => CMS::gen(30),
         ];
     }
 

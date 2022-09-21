@@ -3,15 +3,18 @@
 use panix\engine\Html;
 use panix\engine\bootstrap\ActiveForm;
 use panix\engine\jui\DatePicker;
-use yii\helpers\ArrayHelper;
-use panix\mod\cart\models\OrderStatus;
+
+/**
+ * @var \panix\engine\bootstrap\ActiveForm $form
+ * @var \panix\mod\forsage\models\SettingsForm $model
+ */
 ?>
 
 
 
 
 <?= Html::beginForm('/admin/forsage/settings/products', 'GET'); ?>
-<div class="card" id="card-filter-collapse">
+<div class="card d-none" id="card-filter-collapse">
     <div class="card-header">
         <h5>
             <a class="" data-toggle="collapse" href="#filter-collapse" role="button" aria-expanded="false"
@@ -53,8 +56,6 @@ use panix\mod\cart\models\OrderStatus;
                     </div>
 
 
-
-
                 </div>
             </div>
             <div class="card-footer text-center">
@@ -64,8 +65,6 @@ use panix\mod\cart\models\OrderStatus;
         </div>
     </div>
 </div>
-
-
 <?= Html::endForm(); ?>
 
 <?php
@@ -76,17 +75,9 @@ $form = ActiveForm::begin();
         <h5><?= $this->context->pageName ?></h5>
     </div>
     <div class="card-body">
-        <?php
-        echo yii\bootstrap4\Tabs::widget([
-            'items' => [
-                [
-                    'label' => 'Общие',
-                    'content' => $this->render('_global', ['form' => $form, 'model' => $model]),
-                    'active' => true,
-                ],
-            ],
-        ]);
-        ?>
+        <?php echo $form->field($model, 'out_stock_delete')->checkbox(); ?>
+        <?php echo $form->field($model, 'apikey')->textInput(); ?>
+        <?php echo $form->field($model, 'hook_key')->textInput()->hint(((Yii::$app->request->isSecureConnection) ? 'https://' : 'http://') . Yii::$app->request->serverName . '/forsage/webhook/' . $model->hook_key); ?>
     </div>
     <div class="card-footer text-center">
         <?= $model->submitButton(); ?>

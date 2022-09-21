@@ -173,11 +173,11 @@ class ForsageStudio extends Component
         $url = "https://forsage-studio.com/api/get_changes/";
         $params['start_date'] = $start;
         $params['end_date'] = $end;
-        //$params['products'] = 'changes';
+        //$params['products'] = 'full';
         //$params['quantity'] = 1;
 
         $response = $this->conn_curl($url, $params);
-
+print_r($response);die;
         if ($response) {
             if (isset($response['success'])) {
                 if ($response['success'] == 'true') {
@@ -290,10 +290,10 @@ class ForsageStudio extends Component
         $client = new Client(['baseUrl' => $url]);
         $response = $client->createRequest()
             // ->setFormat(Client::FORMAT_JSON)
-            //->setMethod('GET')
+            ->setMethod('GET')
             ->setOptions([
-                'sslVerifyPeer' => false,
-                'timeout' => 8888
+                //'sslVerifyPeer' => false,
+                //'timeout' => 8888
             ])
             ->setData($params)
             ->send();
