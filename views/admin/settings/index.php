@@ -3,11 +3,14 @@
 use panix\engine\Html;
 use panix\engine\bootstrap\ActiveForm;
 use panix\engine\jui\DatePicker;
-
+use yii\helpers\ArrayHelper;
+use panix\mod\shop\models\ProductType;
 /**
  * @var \panix\engine\bootstrap\ActiveForm $form
  * @var \panix\mod\forsage\models\SettingsForm $model
  */
+
+$types = ArrayHelper::map(ProductType::find()->all(), 'id', 'name');
 ?>
 
 
@@ -76,7 +79,9 @@ $form = ActiveForm::begin();
     </div>
     <div class="card-body">
         <?php echo $form->field($model, 'out_stock_delete')->checkbox(); ?>
-        <?php echo $form->field($model, 'apikey')->textInput(); ?>
+        <?php echo $form->field($model, 'apikey')->textarea(); ?>
+        <?php echo $form->field($model, 'boots_type')->dropdownList($types,['prompt'=>'---'])->hint($model::t('TYPE_HINT')); ?>
+        <?php echo $form->field($model, 'cloth_type')->dropdownList($types,['prompt'=>'---'])->hint($model::t('TYPE_HINT')); ?>
         <?php echo $form->field($model, 'hook_key')->textInput()->hint(((Yii::$app->request->isSecureConnection) ? 'https://' : 'http://') . Yii::$app->request->serverName . '/forsage/webhook/' . $model->hook_key); ?>
     </div>
     <div class="card-footer text-center">

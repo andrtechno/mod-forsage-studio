@@ -2,19 +2,21 @@
 
 namespace panix\mod\forsage;
 
+use panix\engine\CMS;
 use Yii;
 use panix\engine\WebModule;
 use yii\base\BootstrapInterface;
+use yii\helpers\ArrayHelper;
 
 class Module extends WebModule implements BootstrapInterface
 {
-    public $apiKey = '';
+    //public $apiKey = '';
     public $icon = '';
     public $unit = 1;
-    public $type_id = 1;
-    public $outStockDelete = true;
+    //public $type_id = 1;
+    //public $outStockDelete = true;
     public $onlySuppliers = [];
-    public $hookKey;
+    //public $hookKey;
 
     public $excludeCategories = [];
 

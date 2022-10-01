@@ -46,7 +46,7 @@ class m180917_193214_forsage_studio extends Migration
         $this->createIndex('forsage_id', Supplier::tableName(), 'forsage_id');
         $this->createIndex('forsage_id', Attribute::tableName(), 'forsage_id');
         $this->createIndex('forsage_id', AttributeOption::tableName(), 'forsage_id');
-        //$this->createIndex('forsage_id', Brand::tableName(), 'forsage_id');
+        $this->createIndex('forsage_id', Brand::tableName(), 'forsage_id');
         $this->loadSettings();
     }
 

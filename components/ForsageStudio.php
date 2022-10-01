@@ -2,20 +2,20 @@
 
 namespace panix\mod\forsage\components;
 
-use panix\mod\shop\components\ExternalFinder;
-use panix\mod\shop\models\Brand;
-use panix\mod\shop\models\Supplier;
+
 use Yii;
 use yii\base\Component;
-use yii\db\Exception;
 use yii\httpclient\Client;
+use yii\helpers\Json;
+use yii\helpers\Console;
 use panix\engine\CMS;
 use panix\mod\shop\models\Attribute;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Category;
 use panix\mod\shop\models\Product;
-use yii\helpers\Json;
-use yii\helpers\Console;
+use panix\mod\shop\components\ExternalFinder;
+use panix\mod\shop\models\Brand;
+use panix\mod\shop\models\Supplier;
 
 /**
  * ForsageStudio class
@@ -57,7 +57,7 @@ class ForsageStudio extends Component
     public function __construct($config = [])
     {
         $this->external = new ExternalFinder('{{%forsage_studio}}');
-        $this->apiKey = Yii::$app->getModule('forsage')->apiKey;
+        $this->apiKey = Yii::$app->settings->get('forsage', 'apikey');
         parent::__construct($config);
     }
 
@@ -177,7 +177,8 @@ class ForsageStudio extends Component
         //$params['quantity'] = 1;
 
         $response = $this->conn_curl($url, $params);
-print_r($response);die;
+        print_r($response);
+        die;
         if ($response) {
             if (isset($response['success'])) {
                 if ($response['success'] == 'true') {
@@ -312,14 +313,13 @@ print_r($response);die;
         //try {
 
         $props = $this->getProductProps($this->product);
-        print_r($props);die;
-        $errors = (isset($props['error'])) ? true : false;
-        self::log('executeID ' . $this->product['id']);
+
+        //$errors = (isset($props['error'])) ? true : false;
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
 
         if (!$this->product['quantity']) {
             if ($model) {
-                if (Yii::$app->getModule('forsage')->outStockDelete) {
+                if (Yii::$app->settings->get('forsage', 'out_stock_delete')) {
                     self::log('Product delete ' . $this->product['id']);
                     $model->delete();
                     //if (isset($props['images'])) {
@@ -340,13 +340,14 @@ print_r($response);die;
 
         if (!$model) {
             $model = new Product();
-            $model->type_id = Yii::$app->getModule('forsage')->type_id;
+            $model->type_id = $props['type_id'];
             $model->forsage_id = $this->product['id'];
             $model->sku = $this->product['vcode'];
+            $model->created_at = $this->product['photosession_date'];
         }
-        $categoryName = $this->generateCategory($this->product);
+        //$categoryName = $this->generateCategory($this->product);
         $model->name_ru = $this->generateProductName($this->product);
-        $model->name_uk = $this->generateProductName($this->product);
+        $model->name_uk = $model->name_ru;
         $model->slug = CMS::slug($model->name);
         $model->unit = Yii::$app->getModule('forsage')->unit;
 
@@ -401,6 +402,7 @@ print_r($response);die;
                 $full_name_category .= '/' . $sub_category;
             }
         }
+
         //$model->main_category_id = $this->getCategoryByPath($categoryName);
         $model->main_category_id = $this->getCategoryByPath($full_name_category);
 
@@ -635,7 +637,7 @@ print_r($response);die;
             if (!$model) {
                 $model = new Category;
                 $model->name_ru = end($object);
-                $model->name_uk = end($object);
+                $model->name_uk = $model->name_ru;
                 $model->slug = CMS::slug($model->name_ru);
                 $model->appendTo($parent);
             }
@@ -902,8 +904,10 @@ print_r($response);die;
                 $result['error'][] = 'Unknown product images error';
                 // self::log('Unknown product images error');
             }
+
             if ($this->getChildCategory($product)) {
                 $result['categories'][1] = $this->getChildCategory($product);
+                $result['type_id'] = $this->getTypeId($product);
             } else {
                 $result['success'] = false;
                 $result['error'][] = 'Unknown product category child error';
@@ -922,26 +926,59 @@ print_r($response);die;
     }
 
 
-    public function getChildCategory($product)
+    private function getSeasonData__($id)
     {
-
-        if (isset($product['category'])) {
-            if (in_array($product['category']['id'], array(self::CATEGORY_BOOTS))) {
-                if (isset($product['category']['child'])) {
-                    if (isset($product['category']['child']['descriptions'])) {
-                        //ukraine lang
-                        return $product['category']['child']['descriptions'][1]['name'];
-                    } else {
-                        return $product['category']['child']['name'];
-                    }
-
-                } else {
-                    self::log('no find category child, Product ID: ' . $product['id']);
-                }
-            }
+        $result = [];
+        $id = mb_strtolower($id);
+        if ($id == 'демисезон') {
+            $result = ['name' => 'Весна-Осень', 'id' => 8];
+        } elseif ($id == 'лето') {
+            $result = ['name' => 'Лето', 'id' => 4];
+        } elseif ($id == 'зима') {
+            $result = ['name' => 'Зима', 'id' => 2];
         } else {
-            self::log('no find category, Product ID: ' . $product['id']);
+            echo('SEASION: ' . $id);
+        }
+        return (object)$result;
+    }
+    public function getTypeId($product)
+    {
+        if (isset($product['category'])) {
+            if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && Yii::$app->settings->get('forsage', 'cloth_type')) {
+                return Yii::$app->settings->get('forsage', 'cloth_type');
+            } elseif ($product['category']['id'] == self::CATEGORY_BOOTS && Yii::$app->settings->get('forsage', 'boots_type')) {
+                return Yii::$app->settings->get('forsage', 'boots_type');
+            }
         }
         return false;
+    }
+    public function getChildCategory($product)
+    {
+        $flag = false;
+        if (isset($product['category'])) {
+            if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && Yii::$app->settings->get('forsage', 'cloth_type')) {
+                $flag = true;
+            } elseif ($product['category']['id'] == self::CATEGORY_BOOTS && Yii::$app->settings->get('forsage', 'boots_type')) {
+                $flag = true;
+            }
+            if ($flag) {
+                return $this->lastChildCategory($product['category']);
+            }
+        }
+        return false;
+    }
+
+    private function lastChildCategory($category)
+    {
+        if (!isset($category['child'])) {
+            if (isset($category['descriptions'])) {
+                //ukraine lang
+                return $category['descriptions'][1]['name'];
+            } else {
+                return $category['name'];
+            }
+        } else {
+            return $this->lastChildCategory($category['child']);
+        }
     }
 }

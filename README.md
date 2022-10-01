@@ -35,8 +35,8 @@ to the require section of your `composer.json` file.
 'modules' => [
     'forsage' => [
         'class' => 'panix\mod\forsage\Module',
-        'hookKey' => 'YOUR_SECRET_HASH_KEY'
-        'apiKey' => 'YOUR_API_KEY'
+        //'hookKey' => 'YOUR_SECRET_HASH_KEY'
+        //'apiKey' => 'YOUR_API_KEY'
     ],
 ],
 'components' => [
@@ -57,10 +57,10 @@ to the require section of your `composer.json` file.
 #### Mobule props
 | Props           | Default     | Description                                       |
 |-----------------|:-----------:|---------------------------------------------------|
-| apiKey          |    ""       | Apikey                                            |
+| apiKey(old)          |    ""       | Apikey                                            |
 | unit            |    1        | Еденица измерение штука/ящик и.тд                 |
 | type_id         |    1        | ID Типа товара                                    |
-| outStockDelete  |    true     | Удалять товар с Базы-данных если **нет в наличии**    |
+| outStockDelete(old)  |    true     | Удалять товар с Базы-данных если **нет в наличии**    |
 
 
 #### Migrate

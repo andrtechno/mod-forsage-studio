@@ -14,17 +14,19 @@ class SettingsForm extends SettingsModel
     public $out_stock_delete;
     public $apikey;
     public $hook_key;
-
-
+    public $cloth_type;
+    public $boots_type;
     public function rules()
     {
         return [
-            [['hook_key','apikey'], "required"],
+            [['hook_key', 'apikey'], "required"],
             //[['product_related_bilateral', 'group_attribute', 'smart_bc', 'smart_title'], 'boolean'],
-            //[['label_expire_new', 'added_to_cart_count'], 'integer'],
-            [['apikey','hook_key'], 'string'],
+            [['boots_type', 'cloth_type'], 'integer'],
+            [['boots_type', 'cloth_type'], 'default'],
+            [['apikey', 'hook_key'], 'string'],
             [['out_stock_delete'], 'boolean'],
-
+            ['apikey', 'match', 'pattern' => "/^[a-zA-Z0-9\._\-]+$/u"],
+            ['hook_key', 'match', 'pattern' => "/^[a-zA-Z0-9]+$/u", 'message' => 'Только буквы и цифры'],
         ];
     }
 
@@ -36,7 +38,8 @@ class SettingsForm extends SettingsModel
         return [
             'out_stock_delete' => true,
             'apikey' => '',
-            'hook_key' => CMS::gen(30),
+            'hook_key' => CMS::gen(50),
+            'cloth_type' => ''
         ];
     }
 
