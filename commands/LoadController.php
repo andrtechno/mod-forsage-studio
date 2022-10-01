@@ -2,7 +2,13 @@
 
 namespace panix\mod\forsage\commands;
 
+use panix\mod\forsage\components\ProductByIdQueue;
+use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Brand;
+use panix\mod\shop\models\Category;
+use panix\mod\shop\models\ProductAttributesEav;
+use panix\mod\shop\models\ProductCategoryRef;
+use panix\mod\shop\models\ProductImage;
 use panix\mod\shop\models\Supplier;
 use Yii;
 use panix\mod\forsage\components\ForsageStudio;
@@ -49,9 +55,9 @@ class LoadController extends ConsoleController
     public function actionProduct($id)
     {
         $product = $this->fs->getProduct($id);
-        if($product){
+        if ($product) {
             $response = $product->execute();
-        }else{
+        } else {
             echo 'no open product';
         }
         return $response;
@@ -243,7 +249,6 @@ class LoadController extends ConsoleController
     }
 
 
-
     public static function log($mssage)
     {
         Yii::info($mssage);
@@ -407,4 +412,92 @@ class LoadController extends ConsoleController
         }
     }
 
+    /**
+     * Only if enable DEBUG
+     */
+    public function actionClearDb()
+    {
+        if (YII_DEBUG) {
+            $db = Yii::$app->db;
+            //$db->createCommand()->truncateTable('{{%forsage_studio}}')->execute();
+            /*$db->createCommand()->truncateTable(ProductImage::tableName())->execute();
+            $db->createCommand()->truncateTable(ProductCategoryRef::tableName())->execute();
+            $db->createCommand()->truncateTable(ProductAttributesEav::tableName())->execute();
+
+            $db->createCommand()->truncateTable(AttributeOption::tableName())->execute();
+            $db->createCommand()->truncateTable(Attribute::tableName())->execute();
+            $db->createCommand()->truncateTable(Category::tableName())->execute();*/
+
+            if($db->createCommand('SELECT * FROM '.Product::tableName().' WHERE forsage_id IS NOT NULL')->query()->count()){
+                $db->createCommand()->truncateTable(Product::tableName().' WHERE forsage_id IS NOT NULL')->execute();
+            }
+            if($db->createCommand('SELECT * FROM '.Brand::tableName().' WHERE forsage_id IS NOT NULL')->query()->count()){
+                $db->createCommand()->truncateTable(Brand::tableName().' WHERE forsage_id IS NOT NULL')->execute();
+            }
+            if($db->createCommand('SELECT * FROM '.Supplier::tableName().' WHERE forsage_id IS NOT NULL')->query()->count()){
+                $db->createCommand()->truncateTable(Supplier::tableName())->execute();
+            }
+
+
+            /*$model = new Category;
+            $model->name = 'Каталог продукции';
+            $model->lft = 1;
+            $model->rgt = 2;
+            $model->depth = 1;
+            $model->slug = 'root';
+            $model->full_path = '';
+            if ($model->validate()) {
+                $model->saveNode();
+            }*/
+        } else {
+            echo 'YII_DEBUG disabled!.';
+        }
+    }
+
+    public function actionImportAll(){
+
+
+        $confirmMsg = '';
+        $confirmMsg .= "Starting confirm: says (yes|no)\r\n";
+
+
+        $confirm = $this->confirm($confirmMsg, false);
+
+
+        if ($confirm) {
+            $suppliers = $this->fs->getSuppliers();
+           // print_r($suppliers);die;
+
+
+
+
+
+            foreach ($suppliers as $supplier){
+                $i = 0;
+
+                $products = $this->fs->getSupplierProductIds($supplier['id']);
+                $count = count($products);
+                Console::startProgress($i, $count, ' - ', 100);
+                foreach ($products as $product){
+                    Yii::$app->queue->push(new ProductByIdQueue([
+                        'product' => $product_id,
+                    ]));
+                    $i++;
+                    Console::updateProgress($i, $count, $supplier['company'] . ' - ');
+                }
+                Console::endProgress(false);
+
+            }
+
+        }else{
+            echo "\r\n";
+            $this->stdout("--- Cancelled! ---\r\nYou can specify the paths using:");
+            echo "\r\n\r\n";
+            $this->stdout("    php cmd forsage/load/import-all --interactive=1|0", Console::FG_BLUE);
+            echo "\r\n";
+
+            return ExitCode::OK;
+        }
+
+    }
 }

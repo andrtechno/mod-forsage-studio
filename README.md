@@ -29,14 +29,43 @@ or add
 ```
 
 to the require section of your `composer.json` file.
-
+#### Add to common config.
+```
+'bootstrap' => [
+    ..
+    'queue',
+],
+'components' => [
+    ...
+    'queue' => [
+        'class' => 'yii\queue\db\Queue',
+        'channel' => 'default', // Выбранный для очереди канал
+        'mutexTimeout' => 5,
+        'ttr' => 2 * 60, // Максимальное время выполнения задания
+        'attempts' => 3, // Максимальное кол-во попыток
+        'deleteReleased' => true,
+        'mutex' => \yii\mutex\MysqlMutex::class, // Мьютекс для синхронизации запросов
+        'as log' => \yii\queue\LogBehavior::class,
+        // Other driver options
+    ],
+]
+```
+#### Add to console config.
+```
+'controllerMap' => [
+    'migrate' => [
+        ...
+        'migrationNamespaces' => [
+            'yii\queue\db\migrations',
+        ],
+    ]
+],
+```
 #### Add to web config.
 ```
 'modules' => [
     'forsage' => [
         'class' => 'panix\mod\forsage\Module',
-        //'hookKey' => 'YOUR_SECRET_HASH_KEY'
-        //'apiKey' => 'YOUR_API_KEY'
     ],
 ],
 'components' => [

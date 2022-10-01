@@ -121,15 +121,15 @@ class ForsageStudio extends Component
 
     public function getSuppliers()
     {
-        $url = "https://forsage-studio.com/api/get_suppliers"; //&start_date={$date}&end_date={$date}
+        $url = "https://forsage-studio.com/api/get_suppliers";
         $response = $this->conn_curl($url);
         if (isset($response)) {
-
-            return (array)$response;
-        } else {
-            self::log('Method getSuppliers Error success');
-            return false;
+            if ($response['success'] == 'true') {
+                return $response['suppliers'];
+            }
         }
+        self::log('Method getSuppliers Error success');
+        return false;
     }
 
     public function getChanges($start = 3600, $end = 0)
@@ -320,8 +320,8 @@ class ForsageStudio extends Component
         if (!$this->product['quantity']) {
             if ($model) {
                 if (Yii::$app->settings->get('forsage', 'out_stock_delete')) {
-                    self::log('Product delete ' . $this->product['id']);
-                    $model->delete();
+                    //self::log('Product delete ' . $this->product['id']);
+                    //$model->delete();
                     //if (isset($props['images'])) {
                     //    foreach ($props['images'] as $imageUrl) {
                     //        $this->external->deleteExternal($this->external::OBJECT_IMAGE, $this->product['id'] . '/' . basename($imageUrl));
@@ -330,8 +330,10 @@ class ForsageStudio extends Component
                 }
 
             }
-            return false;
+            // return false;
         }
+        self::log('Product quantity ' . $this->product['quantity']);
+
 
         if (!$props['success']) {
             self::log('Product success false ' . $this->product['id']);
@@ -379,7 +381,7 @@ class ForsageStudio extends Component
             }
         }
         $model->price_purchase = (isset($props['price_purchase'])) ? $props['price_purchase'] : 0;
-        $model->in_box = (isset($props['in_box'])) ? $props['in_box'] : NULL;
+        $model->in_box = (isset($props['in_box_new'])) ? $props['in_box_new']['value'] : NULL;
 
         $model->quantity = $this->product['quantity'];
         $model->currency_id = (isset($props['currency_id'])) ? $props['currency_id'] : NULL;
@@ -451,8 +453,8 @@ class ForsageStudio extends Component
                 $this->attributeDataNew($model, $prop);
                 //$this->attributeData($model, $prop['name'], $prop['value']);
             }
-            if (isset($props['in_box'])) {
-                $this->attributeData($model, 'Количество в ящике', $props['in_box']);
+            if (isset($props['in_box_new'])) {
+                $this->attributeData($model, 'Количество в ящике', $props['in_box_new']['value']);
             }
         }
 
@@ -574,9 +576,9 @@ class ForsageStudio extends Component
                 $name .= ' ' . $props['attributes'][6]['value'];
             }
 
-            if (isset($props['in_box'])) {
-                $name .= ' / ' . $props['in_box'];
-            }
+            //if (isset($props['in_box_new'])) {
+            //    $name .= ' / ' . $props['in_box_new']['value'];
+            //}
         }
 
         return $name;
@@ -712,7 +714,7 @@ class ForsageStudio extends Component
             $option->andWhere(['value' => $data['descriptions'][0]['value']]);
             $opt = $option->one();
             if (!$opt)
-                $opt = $this->addOptionToAttributeNew($attributeModel->id, $data['values']);
+                $opt = $this->addOptionToAttributeNew($attributeModel->id, $data['descriptions']);
 
             $attrsdata[$attributeModel->name][] = $opt->id;
             //$attrsdata[$attributeModel->name] =  $attributeValue;
@@ -793,7 +795,6 @@ class ForsageStudio extends Component
             $option->value_uk = $value;
             $option->value_en = $value;
         }
-
         $option->save(false);
         $this->external->createExternalId($this->external::OBJECT_ATTRIBUTE_OPTION, $option->id, $option->value);
         return $option;
@@ -849,7 +850,7 @@ class ForsageStudio extends Component
                             'name' => $characteristic['name'],
                             'value' => trim($characteristic['value'])
                         ];
-                        $result['in_box'] = trim($characteristic['value']);
+                        //$result['in_box'] = trim($characteristic['value']);
                     }
                     // if ($characteristic['id'] == 39) { //Пол
 
@@ -870,12 +871,12 @@ class ForsageStudio extends Component
                         //if (in_array($productData['type_id'], array(self::TYPE_BOOTS_KIDS, self::TYPE_BOOTS))) {
 
                         if (isset($characteristic['descriptions'])) {
-                            if ($characteristic['value'] == 'жінки') {
-                                $result['categories'][0] = 'Жіноча';
-                            } elseif ($characteristic['value'] == 'чоловіки') {
-                                $result['categories'][0] = 'Чоловіча';
-                            } elseif ($characteristic['value'] == 'діти') {
-                                $result['categories'][0] = 'Дитяча';
+                            if (in_array($characteristic['value'], ['жінки', 'женщины'])) {
+                                $result['categories'][0] = 'Wooman';
+                            } elseif (in_array($characteristic['value'], ['чоловіки', 'мужчины'])) {
+                                $result['categories'][0] = 'Man';
+                            } elseif (in_array($characteristic['value'], ['діти', 'дети'])) {
+                                $result['categories'][0] = 'Kids';
                             } else {
                                 $result['success'] = false;
                                 $result['error'][] = 'Пол не задан';
@@ -941,6 +942,7 @@ class ForsageStudio extends Component
         }
         return (object)$result;
     }
+
     public function getTypeId($product)
     {
         if (isset($product['category'])) {
@@ -952,6 +954,7 @@ class ForsageStudio extends Component
         }
         return false;
     }
+
     public function getChildCategory($product)
     {
         $flag = false;

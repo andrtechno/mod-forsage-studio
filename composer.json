@@ -14,7 +14,8 @@
         }
     ],
     "require": {
-        "panix/engine": "*"
+        "panix/engine": "*",
+        "yiisoft/yii2-queue": "2.x-dev"
     },
     "autoload": {
         "psr-4": {
