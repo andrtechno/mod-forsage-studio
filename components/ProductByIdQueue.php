@@ -10,20 +10,21 @@ use yii\queue\JobInterface;
 
 class ProductByIdQueue extends BaseObject implements JobInterface
 {
-    public $product;
+    public $id;
 
     public function execute($queue)
     {
-        $fs = new ForsageStudio();
-        $product = $fs->getProduct($this->product);
+        $forsageClass = Yii::$app->getModule('forsage')->forsageClass;
+        $fs = new $forsageClass;
+        $product = $fs->getProduct($this->id);
         if ($product) {
             if ($product->execute()) {
-                Yii::info('addProduct ' . $this->product, 'forsage');
+                Yii::info('addProduct ' . $this->id, 'forsage');
             } else {
-                Yii::info('NotAddProduct  ' . $this->product, 'forsage');
+                Yii::info('NotAddProduct  ' . $this->id, 'forsage');
             }
         }else{
-            Yii::info('NoGetProduct  ' . $this->product, 'forsage');
+            Yii::info('NoGetProduct  ' . $this->id, 'forsage');
         }
         return true;
     }

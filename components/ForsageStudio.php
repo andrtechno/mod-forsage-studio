@@ -60,7 +60,7 @@ class ForsageStudio extends Component
         //try {
 
         $props = $this->getProductProps($this->product);
-//print_r($props);die;
+
         //$errors = (isset($props['error'])) ? true : false;
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
 

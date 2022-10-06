@@ -429,13 +429,13 @@ class LoadController extends ConsoleController
             $db->createCommand()->truncateTable(Attribute::tableName())->execute();
             $db->createCommand()->truncateTable(Category::tableName())->execute();*/
 
-            if($db->createCommand('SELECT * FROM '.Product::tableName().' WHERE forsage_id IS NOT NULL')->query()->count()){
-                $db->createCommand()->truncateTable(Product::tableName().' WHERE forsage_id IS NOT NULL')->execute();
+            if ($db->createCommand('SELECT * FROM ' . Product::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
+                $db->createCommand()->truncateTable(Product::tableName() . ' WHERE forsage_id IS NOT NULL')->execute();
             }
-            if($db->createCommand('SELECT * FROM '.Brand::tableName().' WHERE forsage_id IS NOT NULL')->query()->count()){
-                $db->createCommand()->truncateTable(Brand::tableName().' WHERE forsage_id IS NOT NULL')->execute();
+            if ($db->createCommand('SELECT * FROM ' . Brand::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
+                $db->createCommand()->truncateTable(Brand::tableName() . ' WHERE forsage_id IS NOT NULL')->execute();
             }
-            if($db->createCommand('SELECT * FROM '.Supplier::tableName().' WHERE forsage_id IS NOT NULL')->query()->count()){
+            if ($db->createCommand('SELECT * FROM ' . Supplier::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
                 $db->createCommand()->truncateTable(Supplier::tableName())->execute();
             }
 
@@ -455,7 +455,8 @@ class LoadController extends ConsoleController
         }
     }
 
-    public function actionImportAll(){
+    public function actionQueueAll()
+    {
 
 
         $confirmMsg = '';
@@ -467,30 +468,36 @@ class LoadController extends ConsoleController
 
         if ($confirm) {
             $suppliers = $this->fs->getSuppliers();
-           // print_r($suppliers);die;
+            // print_r($suppliers);die;
 
-
-
-
-
-            foreach ($suppliers as $supplier){
+            foreach ($suppliers as $supplier) {
                 $i = 0;
-
-                $products = $this->fs->getSupplierProductIds($supplier['id']);
+                $rows = [];
+                $products = $this->fs->getSupplierProductIds($supplier['id'], ['quantity' => 1]);
                 $count = count($products);
-                Console::startProgress($i, $count, ' - ', 100);
-                foreach ($products as $product){
-                    Yii::$app->queue->push(new ProductByIdQueue([
-                        'product' => $product_id,
-                    ]));
+                foreach ($products as $product) {
+                    $job = new ProductByIdQueue;
+                    $job->id = $product;
+                    //$serializer = Instance::ensure($serializer, SerializerInterface::class);
+                    $rows[] = [
+                        'default',
+                        serialize($job),
+                        time(),
+                        120,
+                        1024
+                    ];
                     $i++;
-                    Console::updateProgress($i, $count, $supplier['company'] . ' - ');
                 }
-                Console::endProgress(false);
-
+                Yii::$app->db->createCommand()->batchInsert(Yii::$app->queue->tableName, [
+                    'channel',
+                    'job',
+                    'pushed_at',
+                    'ttr',
+                    'priority'
+                ], $rows)->execute();
             }
 
-        }else{
+        } else {
             echo "\r\n";
             $this->stdout("--- Cancelled! ---\r\nYou can specify the paths using:");
             echo "\r\n\r\n";
