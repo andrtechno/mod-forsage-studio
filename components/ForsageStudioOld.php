@@ -13,13 +13,14 @@ use panix\mod\shop\models\Attribute;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Category;
 use panix\mod\shop\models\Product;
+use panix\mod\shop\components\ExternalFinder;
 use panix\mod\shop\models\Brand;
 use panix\mod\shop\models\Supplier;
 
 /**
  * ForsageStudio class
  */
-class ForsageStudio extends Component
+class ForsageStudioOld extends Component
 {
 
     /**
@@ -34,6 +35,11 @@ class ForsageStudio extends Component
         $brandCache = [],
         $supplierCache = [],
         $currencyCache = [];
+
+    /**
+     * @var ExternalFinder
+     */
+    public $external;
 
     public $product;
     private $apiKey;
@@ -50,9 +56,256 @@ class ForsageStudio extends Component
 
     public function __construct($config = [])
     {
+        $this->external = new ExternalFinder('{{%forsage_studio}}');
         $this->apiKey = Yii::$app->settings->get('forsage', 'apikey');
         parent::__construct($config);
     }
+
+
+    /**
+     * Webhook
+     * @return false|string
+     */
+    public function getInput()
+    {
+        return file_get_contents('php://input');
+    }
+
+    public function my_ucfirst($string, $e = 'utf-8')
+    {
+        if (function_exists('mb_strtoupper') && function_exists('mb_substr') && !empty($string)) {
+            $string = mb_strtolower($string, $e);
+            $upper = mb_strtoupper($string, $e);
+            preg_match('#(.)#us', $upper, $matches);
+            $string = $matches[1] . mb_substr($string, 1, mb_strlen($string, $e), $e);
+        } else {
+            $string = ucfirst($string);
+        }
+        return $string;
+    }
+
+
+    public function getRefbookCharacteristics()
+    {
+        $url = "https://forsage-studio.com/api/get_refbook_characteristics";
+        $params['with_descriptions'] = 1;
+        $response = $this->conn_curl($url, $params);
+        if (isset($response['success'])) {
+            if ($response['success']) {
+                return $response['characteristics'];
+            }
+        } else {
+            self::log('Method getRefbookCharacteristics Error success');
+        }
+        return false;
+    }
+
+
+    public function getProduct($product_id)
+    {
+        $url = "https://forsage-studio.com/api/get_product/{$product_id}";
+        $response = $this->conn_curl($url, ['with_descriptions' => 1]);
+        if (isset($response['success'])) {
+            if ($response['success'] == 'true') {
+                if (in_array($response['product']['category']['id'], Yii::$app->getModule('forsage')->excludeCategories)) {
+                    return false;
+                }
+                $this->product = $response['product'];
+                return $this;
+            }
+        } else {
+            self::log('Method getProduct Error success PID: ' . $product_id);
+        }
+        return false;
+    }
+
+    public function getSuppliers()
+    {
+        $url = "https://forsage-studio.com/api/get_suppliers";
+        $response = $this->conn_curl($url);
+        if (isset($response)) {
+            if ($response['success'] == 'true') {
+                return $response['suppliers'];
+            }
+        }
+        self::log('Method getSuppliers Error success');
+        return false;
+    }
+
+    public function getChanges($start = 3600, $end = 0)
+    {
+
+
+        $hour = 3600;
+        $day = 86400;
+        //for CRON
+        $end_date = time() + $end;
+        $start_date = time() - $start;
+
+        //products = "full" or "changes"
+        Yii::$app->controller->stdout('end_date ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
+        Yii::$app->controller->stdout('start_date ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
+        Yii::$app->controller->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
+        $url = "https://forsage-studio.com/api/get_changes/";
+        $params['start_date'] = $start_date;
+        $params['end_date'] = $end_date;
+        $params['products'] = 'full';
+        //$params['quantity'] = 1;
+
+        $params['with_descriptions'] = 1;
+        $response = $this->conn_curl($url, $params);
+
+        if ($response) {
+            if (isset($response['success'])) {
+                if ($response['success'] == 'true') {
+                    //return $response['product_ids'];
+                    return $response;
+                }
+            }
+        }
+        return false;
+    }
+
+    public function getChanges2($start = 3600, $end = 0)
+    {
+
+
+        $url = "https://forsage-studio.com/api/get_changes/";
+        $params['start_date'] = $start;
+        $params['end_date'] = $end;
+        //$params['products'] = 'full';
+        //$params['quantity'] = 1;
+
+        $response = $this->conn_curl($url, $params);
+        print_r($response);
+        die;
+        if ($response) {
+            if (isset($response['success'])) {
+                if ($response['success'] == 'true') {
+                    //return $response['product_ids'];
+                    return $response;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param int $start
+     * @param int $end
+     * @param array $params
+     * @return bool|mixed
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\httpclient\Exception
+     */
+    public function getProducts($start = 3600, $end = 0, $params = [])
+    {
+
+        $params['start_date'] = $start;
+        $params['end_date'] = $end;
+        if (!isset($params['with_descriptions'])) {
+            $params['with_descriptions'] = 1;
+        }
+        if (!isset($params['quantity'])) {
+            $params['quantity'] = 1;
+        }
+
+
+        $url = "https://forsage-studio.com/api/get_products/";
+
+        $response = $this->conn_curl($url, $params);
+
+        if (isset($response['success'])) {
+            if ($response['success']) {
+                return $response['products'];
+            }
+        } else {
+            self::log('Method getProducts Error success');
+        }
+        return false;
+    }
+
+
+    private function setMessage($message_code)
+    {
+        return \Yii::$app->name . ': ' . iconv('UTF-8', 'windows-1251', Yii::t('exchange1c/default', $message_code));
+    }
+
+    private static function log($msg)
+    {
+        \Yii::info($msg, 'forsage');
+    }
+
+    /**
+     * @param $supplier_id
+     * @param array $params
+     * @return bool|mixed
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\httpclient\Exception
+     */
+    public function getSupplierProductIds($supplier_id, $params = [])
+    {
+        $url = "https://forsage-studio.com/api/get_products_by_supplier/{$supplier_id}"; //&start_date={$date}&end_date={$date}
+        $response = $this->conn_curl($url, $params);
+        if (isset($response['success'])) {
+            if ($response['success'] == 'true') {
+                return $response['product_ids'];
+            } else {
+                print_r($response);
+                self::log($supplier_id . " - " . $response['message']);
+            }
+        } else {
+            self::log('Method getSupplierProductIds Error success SID: ' . $supplier_id);
+        }
+        return false;
+    }
+
+    public function getBrands()
+    {
+        $url = "https://forsage-studio.com/api/get_brands";
+        $response = $this->conn_curl($url, []);
+        if (isset($response['success'])) {
+            if ($response['success'] == 'true') {
+                return $response['brands'];
+            } else {
+                self::log(" - " . $response['message']);
+            }
+        } else {
+            self::log('Method getBrands Error success: ');
+        }
+        return false;
+    }
+
+    /**
+     * @param $url
+     * @param array $params
+     * @return mixed|null
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\httpclient\Exception
+     */
+    private function conn_curl($url, $params = [])
+    {
+
+        $params['token'] = $this->apiKey;
+
+        $client = new Client(['baseUrl' => $url]);
+        $response = $client->createRequest()
+            // ->setFormat(Client::FORMAT_JSON)
+            ->setMethod('GET')
+            ->setOptions([
+                //'sslVerifyPeer' => false,
+                //'timeout' => 8888
+            ])
+            ->setData($params)
+            ->send();
+
+        if ($response->isOk) {
+            return $response->data;
+        } else {
+            return Json::decode($response->content);
+        }
+    }
+
 
     public function execute()
     {
@@ -69,6 +322,11 @@ class ForsageStudio extends Component
                 if (Yii::$app->settings->get('forsage', 'out_stock_delete')) {
                     //self::log('Product delete ' . $this->product['id']);
                     //$model->delete();
+                    //if (isset($props['images'])) {
+                    //    foreach ($props['images'] as $imageUrl) {
+                    //        $this->external->deleteExternal($this->external::OBJECT_IMAGE, $this->product['id'] . '/' . basename($imageUrl));
+                    //     }
+                    // }
                 }
 
             }
@@ -192,8 +450,13 @@ class ForsageStudio extends Component
 
         if (isset($props['attributes'])) {
             foreach ($props['attributes'] as $id => $prop) {
-                $this->attributeData($model, $prop);
+                // print_r($prop);die;
+                $this->attributeDataNew($model, $prop);
+                //$this->attributeData($model, $prop['name'], $prop['value']);
             }
+            //if (isset($props['in_box_new'])) {
+            //    $this->attributeData($model, 'Количество в ящике', $props['in_box_new']['value']);
+            //}
         }
 
 
@@ -270,7 +533,8 @@ class ForsageStudio extends Component
                 'value' => $sizes[0]
             ];
 
-            $this->attributeData($model, $prop);
+            $this->attributeDataNew($model, $prop);
+            //$this->attributeData($model, 'Размер', $sizes);
         }
 
 
@@ -452,7 +716,7 @@ class ForsageStudio extends Component
      * @param $model
      * @param $data
      */
-    private function attributeData($model, $data)
+    private function attributeDataNew($model, $data)
     {
 
         if (isset($data['descriptions'])) {
@@ -492,6 +756,59 @@ class ForsageStudio extends Component
         }
     }
 
+
+    /**
+     * @param $model
+     * @param $attributeName
+     * @param $attributeValues
+     */
+    private function attributeData($model, $attributeName, $attributeValues)
+    {
+        if (!is_array($attributeValues)) {
+            $attributeValues = [$attributeValues];
+        }
+        if ($attributeValues) {
+
+            $attributeModel = $this->external->getObject($this->external::OBJECT_ATTRIBUTE, $attributeName);
+            //$attributeModel = Attribute::findOne(['forsage_id'=>$id]); //IN DEV
+            if (!$attributeModel) {
+                //if not exists create attribute
+                $attributeModel = new Attribute();
+                $attributeModel->title_ru = $attributeName;
+                $attributeModel->title_uk = $attributeName;
+                $attributeModel->name = CMS::slug($attributeModel->title, '_');
+                $attributeModel->type = Attribute::TYPE_DROPDOWN;
+                $attributeModel->save(false);
+                if (count($attributeValues) > 1) {
+                    $attributeModel->use_in_filter = 1;
+                    $attributeModel->select_many = 1;
+                }
+                $this->external->createExternalId($this->external::OBJECT_ATTRIBUTE, $attributeModel->id, $attributeModel->title);
+            }
+            $attrsdata = [];
+            foreach ($attributeValues as $attributeValue) {
+
+                $option = AttributeOption::find();
+                //$option->joinWith('translations');
+                $option->where(['attribute_id' => $attributeModel->id]);
+                //$option->andWhere([AttributeOptionTranslate::tableName() . '.value' => $attributeValue]);
+                $option->andWhere(['value' => $attributeValue]);
+                $opt = $option->one();
+                if (!$opt)
+                    $opt = $this->addOptionToAttribute($attributeModel->id, $attributeValue);
+
+                $attrsdata[$attributeModel->name][] = $opt->id;
+                //$attrsdata[$attributeModel->name] =  $attributeValue;
+
+            }
+
+            if (!empty($attrsdata)) {
+                $model->setEavAttributes($attrsdata, true);
+            }
+        }
+    }
+
+
     public function addOptionToAttributeNew($attribute_id, $value)
     {
 
@@ -508,6 +825,20 @@ class ForsageStudio extends Component
             $option->value_en = $value;
         }
         $option->save(false);
+        //$this->external->createExternalId($this->external::OBJECT_ATTRIBUTE_OPTION, $option->id, $option->value);
+        return $option;
+    }
+
+    public function addOptionToAttribute($attribute_id, $value)
+    {
+        // Add option
+        $option = new AttributeOption;
+        $option->attribute_id = $attribute_id;
+        $option->value = $value;
+        $option->value_uk = $value;
+        $option->value_en = $value;
+        $option->save(false);
+        $this->external->createExternalId($this->external::OBJECT_ATTRIBUTE_OPTION, $option->id, $option->value);
         return $option;
     }
 
@@ -624,6 +955,23 @@ class ForsageStudio extends Component
         return $result;
     }
 
+
+    private function getSeasonData__($id)
+    {
+        $result = [];
+        $id = mb_strtolower($id);
+        if ($id == 'демисезон') {
+            $result = ['name' => 'Весна-Осень', 'id' => 8];
+        } elseif ($id == 'лето') {
+            $result = ['name' => 'Лето', 'id' => 4];
+        } elseif ($id == 'зима') {
+            $result = ['name' => 'Зима', 'id' => 2];
+        } else {
+            echo('SEASION: ' . $id);
+        }
+        return (object)$result;
+    }
+
     public function getTypeId($product)
     {
         if (isset($product['category'])) {
@@ -664,270 +1012,5 @@ class ForsageStudio extends Component
         } else {
             return $this->lastChildCategory($category['child']);
         }
-    }
-
-    /**
-     * @param int $start
-     * @param int $end
-     * @param array $params
-     * @return bool|mixed
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    public function getProducts($start = 3600, $end = 0, $params = [])
-    {
-
-        $params['start_date'] = $start;
-        $params['end_date'] = $end;
-        if (!isset($params['with_descriptions'])) {
-            $params['with_descriptions'] = 1;
-        }
-        if (!isset($params['quantity'])) {
-            $params['quantity'] = 1;
-        }
-
-
-        $url = "https://forsage-studio.com/api/get_products/";
-
-        $response = $this->conn_curl($url, $params);
-
-        if (isset($response['success'])) {
-            if ($response['success']) {
-                return $response['products'];
-            }
-        } else {
-            self::log('Method getProducts Error success');
-        }
-        return false;
-    }
-
-
-    /**
-     * @param $supplier_id
-     * @param array $params
-     * @return bool|mixed
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    public function getSupplierProductIds($supplier_id, $params = [])
-    {
-        $url = "https://forsage-studio.com/api/get_products_by_supplier/{$supplier_id}"; //&start_date={$date}&end_date={$date}
-        $response = $this->conn_curl($url, $params);
-        if (isset($response['success'])) {
-            if ($response['success'] == 'true') {
-                return $response['product_ids'];
-            } else {
-                print_r($response);
-                self::log($supplier_id . " - " . $response['message']);
-            }
-        } else {
-            self::log('Method getSupplierProductIds Error success SID: ' . $supplier_id);
-        }
-        return false;
-    }
-
-    /**
-     * Brands list
-     * @return bool|mixed
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    public function getBrands()
-    {
-        $url = "https://forsage-studio.com/api/get_brands";
-        $response = $this->conn_curl($url, []);
-        if (isset($response['success'])) {
-            if ($response['success'] == 'true') {
-                return $response['brands'];
-            } else {
-                self::log(" - " . $response['message']);
-            }
-        } else {
-            self::log('Method getBrands Error success: ');
-        }
-        return false;
-    }
-
-    /**
-     * @return bool|mixed
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    public function getRefbookCharacteristics()
-    {
-        $url = "https://forsage-studio.com/api/get_refbook_characteristics";
-        $params['with_descriptions'] = 1;
-        $response = $this->conn_curl($url, $params);
-        if (isset($response['success'])) {
-            if ($response['success']) {
-                return $response['characteristics'];
-            }
-        } else {
-            self::log('Method getRefbookCharacteristics Error success');
-        }
-        return false;
-    }
-
-    /**
-     * @param $product_id
-     * @return $this|bool
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    public function getProduct($product_id)
-    {
-        $url = "https://forsage-studio.com/api/get_product/{$product_id}";
-        $response = $this->conn_curl($url, ['with_descriptions' => 1]);
-        if (isset($response['success'])) {
-            if ($response['success'] == 'true') {
-                if (in_array($response['product']['category']['id'], Yii::$app->getModule('forsage')->excludeCategories)) {
-                    return false;
-                }
-                $this->product = $response['product'];
-                return $this;
-            }
-        } else {
-            self::log('Method getProduct Error success PID: ' . $product_id);
-        }
-        return false;
-    }
-
-    /**
-     * @return bool|mixed
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    public function getSuppliers()
-    {
-        $url = "https://forsage-studio.com/api/get_suppliers";
-        $response = $this->conn_curl($url);
-        if (isset($response)) {
-            if ($response['success'] == 'true') {
-                return $response['suppliers'];
-            }
-        }
-        self::log('Method getSuppliers Error success');
-        return false;
-    }
-
-    /**
-     * @param int $start
-     * @param int $end
-     * @return bool|mixed
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    public function getChanges($start = 3600, $end = 0)
-    {
-
-
-        $hour = 3600;
-        $day = 86400;
-        //for CRON
-        $end_date = time() + $end;
-        $start_date = time() - $start;
-
-        //products = "full" or "changes"
-        Yii::$app->controller->stdout('end_date ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
-        Yii::$app->controller->stdout('start_date ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
-        Yii::$app->controller->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
-        $url = "https://forsage-studio.com/api/get_changes/";
-        $params['start_date'] = $start_date;
-        $params['end_date'] = $end_date;
-        $params['products'] = 'full';
-        //$params['quantity'] = 1;
-
-        $params['with_descriptions'] = 1;
-        $response = $this->conn_curl($url, $params);
-
-        if ($response) {
-            if (isset($response['success'])) {
-                if ($response['success'] == 'true') {
-                    //return $response['product_ids'];
-                    return $response;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @param int $start
-     * @param int $end
-     * @return bool
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    public function getChanges2($start = 3600, $end = 0)
-    {
-
-
-        $url = "https://forsage-studio.com/api/get_changes/";
-        $params['start_date'] = $start;
-        $params['end_date'] = $end;
-        //$params['products'] = 'full';
-        //$params['quantity'] = 1;
-
-        $response = $this->conn_curl($url, $params);
-        print_r($response);
-        die;
-        if ($response) {
-            if (isset($response['success'])) {
-                if ($response['success'] == 'true') {
-                    //return $response['product_ids'];
-                    return $response;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @param $url
-     * @param array $params
-     * @return mixed|null
-     * @throws \yii\base\InvalidConfigException
-     * @throws \yii\httpclient\Exception
-     */
-    private function conn_curl($url, $params = [])
-    {
-
-        $params['token'] = $this->apiKey;
-
-        $client = new Client(['baseUrl' => $url]);
-        $response = $client->createRequest()
-            // ->setFormat(Client::FORMAT_JSON)
-            ->setMethod('GET')
-            ->setOptions([
-                //'sslVerifyPeer' => false,
-                //'timeout' => 8888
-            ])
-            ->setData($params)
-            ->send();
-
-        if ($response->isOk) {
-            return $response->data;
-        } else {
-            return Json::decode($response->content);
-        }
-    }
-
-    private function setMessage($message_code)
-    {
-        return \Yii::$app->name . ': ' . iconv('UTF-8', 'windows-1251', Yii::t('exchange1c/default', $message_code));
-    }
-
-    private static function log($msg)
-    {
-        \Yii::info($msg, 'forsage');
-    }
-
-    /**
-     * Webhook
-     * @return false|string
-     */
-    public function getInput()
-    {
-        return file_get_contents('php://input');
     }
 }

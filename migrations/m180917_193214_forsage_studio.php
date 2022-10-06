@@ -24,7 +24,7 @@ class m180917_193214_forsage_studio extends Migration
     public function up()
     {
         $tableOptions = 'CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci ENGINE=InnoDB';
-        $this->createTable('{{%forsage_studio}}', [
+       /* $this->createTable('{{%forsage_studio}}', [
             'id' => $this->primaryKey()->unsigned(),
             'object_id' => $this->integer()->unsigned()->null(),
             'object_type' => $this->tinyInteger()->null(),
@@ -34,7 +34,7 @@ class m180917_193214_forsage_studio extends Migration
 
         $this->createIndex('object_id', '{{%forsage_studio}}', 'object_id');
         $this->createIndex('object_type', '{{%forsage_studio}}', 'object_type');
-        $this->createIndex('external_id', '{{%forsage_studio}}', 'external_id');
+        $this->createIndex('external_id', '{{%forsage_studio}}', 'external_id');*/
         $this->addColumn(Product::tableName(), 'forsage_id', 'int');
         $this->addColumn(Product::tableName(), 'in_box', 'int');
         $this->addColumn(Supplier::tableName(), 'forsage_id', 'int');
@@ -52,7 +52,7 @@ class m180917_193214_forsage_studio extends Migration
 
     public function down()
     {
-        $this->dropTable('{{%forsage_studio}}');
+        //$this->dropTable('{{%forsage_studio}}');
         $this->dropColumn(Product::tableName(), 'forsage_id');
         $this->dropColumn(Product::tableName(), 'in_box');
         $this->dropColumn(Supplier::tableName(), 'forsage_id');

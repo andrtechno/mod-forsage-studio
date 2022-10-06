@@ -17,7 +17,7 @@ class Module extends WebModule implements BootstrapInterface
     //public $outStockDelete = true;
     public $onlySuppliers = [];
     //public $hookKey;
-
+    public $forsageClass = '\panix\mod\forsage\components\ForsageStudio';
     public $excludeCategories = [];
 
     public function bootstrap($app)
