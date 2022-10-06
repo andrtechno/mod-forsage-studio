@@ -409,7 +409,7 @@ class ForsageStudio extends Component
         $model->main_category_id = $this->getCategoryByPath($full_name_category);
 
 
-        if (isset($this->product['supplier'])) {
+        if (isset($this->product['supplier']) && $model->isNewRecord) {
             $supplier = Supplier::findOne(['forsage_id' => $this->product['supplier']['id']]);
             if (!$supplier) {
                 $supplier = new Supplier();
