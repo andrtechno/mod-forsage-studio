@@ -21,7 +21,8 @@ class DefaultController extends Controller
 
     public function actionWebhook()
     {
-        $fs = new ForsageStudio();
+        $forsageClass = Yii::$app->getModule('forsage')->forsageClass;
+        $fs = new $forsageClass;
         $input = json_decode($fs->input, true);
 
         if ($input) {
