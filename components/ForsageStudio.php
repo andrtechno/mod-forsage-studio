@@ -60,7 +60,7 @@ class ForsageStudio extends Component
         //try {
 
         $props = $this->getProductProps($this->product);
-
+//print_r($props);die;
         //$errors = (isset($props['error'])) ? true : false;
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
 
@@ -123,7 +123,7 @@ class ForsageStudio extends Component
             }
         }
         $model->price_purchase = (isset($props['price_purchase'])) ? $props['price_purchase'] : 0;
-        $model->in_box = (isset($props['in_box_new'])) ? $props['in_box_new']['value'] : NULL;
+        $model->in_box = (isset($props['in_box'])) ? $props['in_box']['value'] : NULL;
 
         $model->quantity = $this->product['quantity'];
         $model->currency_id = (isset($props['currency_id'])) ? $props['currency_id'] : NULL;
@@ -191,97 +191,73 @@ class ForsageStudio extends Component
         $this->processCategories($model, $model->main_category_id);
 
         if (isset($props['attributes'])) {
-            foreach ($props['attributes'] as $id => $prop) {
-                $this->attributeData($model, $prop);
-            }
-        }
 
 
-        if (isset($props['attributes'][6]['value'])) {
+            if (isset($props['attributes'][6]['value'])) {
 
-            $explode = explode('-', $props['attributes'][6]['value']);
+                $explode = explode('-', $props['attributes'][6]['value']);
 
-            $size_min = (int)$explode[0];
-            //$size_max = (int)$explode[1];
+                $size_min = (int)$explode[0];
+                //$size_max = (int)$explode[1];
 
-            $list2 = [
-                '0-20' => 'до 20',
-                '20-25' => '20-25',
-                '26-31' => '26-31',
-                '27-32' => '27-32',
-                '31-36' => '31-36',
-                '32-37' => '32-37',
-                '36-41' => '36-41',
-                '39-44' => '39-44',
-                '40-45' => '40-45',
-                '41-46' => '41-46',
-                '45-99' => 'более 45'
-            ];
+                $list2 = [
+                    '0-20' => 'до 20',
+                    '20-25' => '20-25',
+                    '26-31' => '26-31',
+                    '27-32' => '27-32',
+                    '31-36' => '31-36',
+                    '32-37' => '32-37',
+                    '36-41' => '36-41',
+                    '39-44' => '39-44',
+                    '40-45' => '40-45',
+                    '41-46' => '41-46',
+                    '45-99' => 'более 45'
+                ];
 
-            $list = [
-                '45-99' => 'более 45',
-                '41-46' => '41-46',
-                '40-45' => '40-45',
-                '39-44' => '39-44',
-                '36-41' => '36-41',
-                '32-37' => '32-37',
-                '31-36' => '31-36',
-                '27-32' => '27-32',
-                '26-31' => '26-31',
-                '20-25' => '20-25',
+                $list = [
+                    '45-99' => 'более 45',
+                    '41-46' => '41-46',
+                    '40-45' => '40-45',
+                    '39-44' => '39-44',
+                    '36-41' => '36-41',
+                    '32-37' => '32-37',
+                    '31-36' => '31-36',
+                    '27-32' => '27-32',
+                    '26-31' => '26-31',
+                    '20-25' => '20-25',
 
-            ];
-            $sizes = [];
-            foreach ($list as $key => $l) {
-                $liste = explode('-', $key);
-                if (in_array($size_min, range($liste[0], $liste[1]))) {
-                    // if (in_array($liste[0], range($size_min, $size_max))) {
-                    $sizes[] = $l;
-                    break;
+                ];
+                $sizes = [];
+                foreach ($list as $key => $l) {
+                    $liste = explode('-', $key);
+                    if (in_array($size_min, range($liste[0], $liste[1]))) {
+                        // if (in_array($liste[0], range($size_min, $size_max))) {
+                        $sizes[] = $l;
+                        break;
+                    }
                 }
-            }
-            //Array
-            //(
-            //    [id] => 4
-            //    [name] => Цвет
-            //    [value] => микс
-            //    [descriptions] => Array
-            //        (
-            //            [0] => Array
-            //                (
-            //                    [code] => ru
-            //                    [name] => Цвет
-            //                    [value] => микс
-            //                )
-            //
-            //            [1] => Array
-            //                (
-            //                    [code] => uk
-            //                    [name] => Колір
-            //                    [value] => мікс
-            //                )
-            //
-            //        )
-            //
-            //)
-            $prop = [
-                'id' => 99999,
-                'name' => 'Размер',
-                'value' => $sizes[0]
-            ];
+                $props['attributes'][99999] = [
+                    'id' => 99999,
+                    'name' => 'Размер',
+                    'value' => $sizes[0]
+                ];
 
-            $this->attributeData($model, $prop);
+
+            }
+
+            $this->attributeData($model, $props['attributes']);
+
         }
 
 
         //set image
         if (isset($props['images'])) {
-            foreach ($model->getImages()->all() as $im) {
+            /*foreach ($model->getImages()->all() as $im) {
                 $im->delete();
             }
             foreach ($props['images'] as $file) {
                 $model->attachImage($file);
-            }
+            }*/
         }
 
 
@@ -344,8 +320,8 @@ class ForsageStudio extends Component
                 $name .= ' ' . $props['attributes'][6]['value'];
             }
 
-            //if (isset($props['in_box_new'])) {
-            //    $name .= ' / ' . $props['in_box_new']['value'];
+            //if (isset($props['in_box'])) {
+            //    $name .= ' / ' . $props['in_box']['value'];
             //}
         }
 
@@ -452,10 +428,12 @@ class ForsageStudio extends Component
      * @param $model
      * @param $data
      */
-    private function attributeData($model, $data)
+    private function attributeData($model, $datas)
     {
+        $attrsdata = [];
+        foreach ($datas as $data) {
 
-        if (isset($data['descriptions'])) {
+
             $attributeModel = Attribute::findOne(['forsage_id' => $data['id']]);
             if (!$attributeModel) {
                 $attributeModel = new Attribute();
@@ -473,7 +451,6 @@ class ForsageStudio extends Component
 
             }
 
-            $attrsdata = [];
             //foreach ($attributeValues as $attributeValue) {
 
             $option = AttributeOption::find();
@@ -483,16 +460,18 @@ class ForsageStudio extends Component
             $option->andWhere(['value' => (isset($data['descriptions'][0]['value'])) ? $data['descriptions'][0]['value'] : $data['value']]);
             $opt = $option->one();
             if (!$opt)
-                $opt = $this->addOptionToAttributeNew($attributeModel->id, ($data['descriptions']) ? $data['descriptions'] : $data['value']);
+                $opt = $this->addOptionToAttribute($attributeModel->id, ($data['descriptions']) ? $data['descriptions'] : $data['value']);
 
             $attrsdata[$attributeModel->name][] = $opt->id;
-            if (!empty($attrsdata)) {
-                $model->setEavAttributes($attrsdata, true);
-            }
+
+
+        }
+        if (!empty($attrsdata)) {
+            $model->setEavAttributes($attrsdata, true);
         }
     }
 
-    public function addOptionToAttributeNew($attribute_id, $value)
+    public function addOptionToAttribute($attribute_id, $value)
     {
 
         // Add option
@@ -517,6 +496,7 @@ class ForsageStudio extends Component
 
         $result = false;
         $result['success'] = true;
+
         if (isset($product['characteristics'])) {
             foreach ($product['characteristics'] as $characteristic) {
                 if (!empty($characteristic['value']) && ($characteristic['value'] != '-')) {
@@ -544,7 +524,7 @@ class ForsageStudio extends Component
                         $result['description'] = trim($characteristic['value']);
                     }
                     if ($characteristic['id'] == 8) {
-                        $result['in_box_new'] = [
+                        $result['in_box'] = [
                             'name' => $characteristic['name'],
                             'value' => trim($characteristic['value'])
                         ];
@@ -557,7 +537,7 @@ class ForsageStudio extends Component
                     // }
 
                     //attributes
-                    if (!in_array($characteristic['id'], [1, 3, 8, 13, 24, 25, 29, 33, 34, 35, 38, 46, 45, 47, 53])) {
+                    if (!in_array($characteristic['id'], [1, 3, 13, 24, 25, 29, 33, 34, 35, 38, 46, 45, 47, 53])) {
                         $result['attributes'][$characteristic['id']] = [
                             'id' => $characteristic['id'],
                             'name' => $characteristic['name'],
@@ -917,9 +897,9 @@ class ForsageStudio extends Component
         return \Yii::$app->name . ': ' . iconv('UTF-8', 'windows-1251', Yii::t('exchange1c/default', $message_code));
     }
 
-    private static function log($msg)
+    protected static function log($msg)
     {
-        \Yii::info($msg, 'forsage');
+        Yii::info($msg, 'forsage');
     }
 
     /**

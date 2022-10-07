@@ -3,6 +3,7 @@
 namespace panix\mod\forsage\commands;
 
 use panix\mod\forsage\components\ProductByIdQueue;
+use panix\mod\forsage\components\ProductQueue;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Brand;
 use panix\mod\shop\models\Category;
@@ -255,19 +256,24 @@ class LoadController extends ConsoleController
         Yii::info($mssage);
     }
 
-    public function actionExportContacts()
+    /**
+     * Экспорт всех поставщиков их контактов
+     * @param string $delimiter default ";"
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\httpclient\Exception
+     */
+    public function actionExportContacts($delimiter = ';')
     {
-        $this->fs = new ForsageStudio();
         $suppliers = $this->fs->getSuppliers();
 
-        foreach ($suppliers['suppliers'] as $supplier) {
+        foreach ($suppliers as $supplier) {
             $list[] = [$supplier['company'], str_replace('+', '', CMS::phoneFormat($supplier['phone'])), $supplier['phone'], $supplier['email'], $supplier['address']];
         }
         asort($list);
         $fp = fopen(Yii::getAlias('@runtime/') . 'suppliers_contact.csv', 'w');
-        fputcsv($fp, ['Имя', 'Телефон', 'Телефон формат', 'E-mail', 'Адрес'], ';');
+        fputcsv($fp, ['Имя', 'Телефон', 'Телефон формат', 'E-mail', 'Адрес'], $delimiter);
         foreach ($list as $fields) {
-            fputcsv($fp, $fields, ';');
+            fputcsv($fp, $fields, $delimiter);
         }
         fclose($fp);
     }
@@ -455,30 +461,21 @@ class LoadController extends ConsoleController
         }
     }
 
-    public function actionQueueAll()
+    public function actionQueueAll($quantity = 1)
     {
-
-
         $confirmMsg = '';
         $confirmMsg .= "Starting confirm: says (yes|no)\r\n";
-
-
         $confirm = $this->confirm($confirmMsg, false);
-
-
         if ($confirm) {
             $suppliers = $this->fs->getSuppliers();
-            // print_r($suppliers);die;
-
             foreach ($suppliers as $supplier) {
                 $i = 0;
                 $rows = [];
-                $products = $this->fs->getSupplierProductIds($supplier['id'], ['quantity' => 1]);
+                $products = $this->fs->getSupplierProductIds($supplier['id'], ['quantity' => $quantity]);
                 $count = count($products);
                 foreach ($products as $product) {
                     $job = new ProductByIdQueue;
                     $job->id = $product;
-                    //$serializer = Instance::ensure($serializer, SerializerInterface::class);
                     $rows[] = [
                         'default',
                         serialize($job),
@@ -508,4 +505,5 @@ class LoadController extends ConsoleController
         }
 
     }
+
 }

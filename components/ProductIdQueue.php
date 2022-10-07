@@ -14,7 +14,8 @@ class ProductIdQueue extends BaseObject implements JobInterface
 
     public function execute($queue)
     {
-        $fs = new ForsageStudio();
+        $forsageClass = Yii::$app->getModule('forsage')->forsageClass;
+        $fs = new $forsageClass;
         $count = count($this->product_ids);
         $i = 0;
         Console::startProgress($i, $count, ' - ', 100);

@@ -24,6 +24,16 @@ class SettingsController extends AdminController
             ],
             $this->pageName
         ];
+
+        $this->buttons = [
+            [
+                'icon' => 'export',
+                'label' => Yii::t('shop/admin', 'export contacts'),
+                'url' => ['export'],
+                'options' => ['class' => 'btn btn-success']
+            ]
+        ];
+
         $model = new SettingsForm();
         if ($model->load(Yii::$app->request->post())) {
             if ($model->validate()) {
@@ -66,6 +76,40 @@ class SettingsController extends AdminController
         return $this->render('index', [
             'model' => $model
         ]);
+    }
+
+    /**
+     * Экспорт всех поставщиков их контактов
+     * @param string $delimiter default ";"
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\httpclient\Exception
+     */
+    public function actionExport()
+    {
+        $forsageClass = Yii::$app->getModule('forsage')->forsageClass;
+        $fs = new $forsageClass;
+        $suppliers = $fs->getSuppliers();
+
+        foreach ($suppliers as $supplier) {
+            $list[] = [$supplier['company'], str_replace('+', '', CMS::phoneFormat($supplier['phone'])), $supplier['phone'], $supplier['email'], $supplier['address']];
+        }
+        asort($list);
+        $path = Yii::getAlias('@runtime/') . 'suppliers_contact.csv';
+        $fp = fopen($path, 'w');
+        fputcsv($fp, ['Имя', 'Телефон', 'Телефон формат', 'E-mail', 'Адрес'], ';');
+        foreach ($list as $fields) {
+            fputcsv($fp, $fields, ';');
+        }
+        fclose($fp);
+
+
+        if (file_exists($path)) {
+            return Yii::$app->response->sendFile($path, 'suppliers_contact.csv'); //->send()
+            //return $this->redirect(['/admin/forsage/settings']);
+        } else {
+            throw new \yii\web\NotFoundHttpException("{$path} is not found!");
+        }
+
     }
 
 }
