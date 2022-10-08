@@ -52,10 +52,15 @@ class LoadController extends ConsoleController
     /**
      * Информация о товаре: "forsage/load/product <id>"
      * @param $id
+     * @param $delete Delete before product
      * @return bool
      */
-    public function actionProduct($id)
+    public function actionProduct($id, $delete = 0)
     {
+        if ($delete) {
+            $p = Product::findOne(['forsage_id' => $id]);
+            $p->delete();
+        }
         $product = $this->fs->getProduct($id);
         if ($product) {
             $response = $product->execute();

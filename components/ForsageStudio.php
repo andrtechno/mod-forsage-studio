@@ -3,6 +3,7 @@
 namespace panix\mod\forsage\components;
 
 
+use panix\mod\shop\models\Currency;
 use Yii;
 use yii\base\Component;
 use yii\httpclient\Client;
@@ -60,7 +61,7 @@ class ForsageStudio extends Component
         //try {
 
         $props = $this->getProductProps($this->product);
-//print_r($props);die;
+
         //$errors = (isset($props['error'])) ? true : false;
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
 
@@ -95,13 +96,16 @@ class ForsageStudio extends Component
         $model->slug = CMS::slug($model->name);
         $model->unit = Yii::$app->getModule('forsage')->unit;
 
-        $model->switch = ($this->product['quantity']) ? 1 : 0;
-        if ($this->product['quantity']) {
+        //$model->switch = ($this->product['quantity']) ? 1 : 0;
+        if ($this->product['quantity'] == 1) {
             $model->availability = Product::STATUS_IN_STOCK; //есть на складе
+        } elseif($this->product['quantity'] < 0) {
+            $model->availability = Product::STATUS_PREORDER; //под заказ
         } else {
             $model->availability = Product::STATUS_OUT_STOCK; //нет на складе
         }
-        $model->discount = NULL;
+        // print_r($this->product);die;
+
 
         /*//цена за ящик
         $model->price = (isset($props['price'], $props['in_box'])) ? $props['price'] * $props['in_box'] : 0;
@@ -114,20 +118,38 @@ class ForsageStudio extends Component
         $model->price_purchase = (isset($props['price_purchase'], $props['in_box'])) ? $props['price_purchase'] * $props['in_box'] : 0;
         */
 
-        //цена за пару
-        $model->price = (isset($props['price'])) ? $props['price'] : 0;
-        if (isset($props['price_old'])) {
-            if ($props['price_old'] > $props['price']) {
-                $model->discount = ($props['price_old'] - $props['price']);
-                $model->price = $props['price_old'];
-            }
-        }
+
         $model->price_purchase = (isset($props['price_purchase'])) ? $props['price_purchase'] : 0;
         $model->in_box = (isset($props['in_box'])) ? $props['in_box']['value'] : NULL;
+//print_r($this->product['quantity']);die;
+        $model->quantity = 1;//$this->product['quantity'];
 
-        $model->quantity = $this->product['quantity'];
-        $model->currency_id = (isset($props['currency_id'])) ? $props['currency_id'] : NULL;
         $model->video = (isset($props['video'])) ? $props['video'] : NULL;
+        //цена за пару
+        $old_price = $model->price;
+        $model->price = (isset($props['price'])) ? $props['price'] : 0;
+
+        if (!$model->isNewRecord) {
+            $model->discount = NULL;
+            if (isset($props['price_old'])) {
+                /*if ($props['price_old'] > $props['price']) {
+                    $model->discount = ($props['price_old'] - $props['price']);
+                    $model->price = $props['price_old'];
+                }*/
+                if ($props['price_old'] > $props['price']) {
+
+
+                    if(($props['price_old'] - $props['price']) < $props['price']){
+                        $model->discount = ($props['price_old'] - $props['price']);
+                        $model->price = $props['price_old'];
+                    }
+
+
+                }
+            }
+        }
+
+        $model->currency_id = $props['currency_id'];
 
         if (isset($prop['description'])) {
             $model->short_description_ru = $prop['description'];
@@ -142,7 +164,7 @@ class ForsageStudio extends Component
             $main_category = $props['categories'][0];
             $full_name_category = $main_category;
             if (isset($props['categories'][1])) {
-                $sub_category = $props['categories'][1];
+                $sub_category = $props['categories'][1]['name'];
                 $full_name_category .= '/' . $sub_category;
             }
         }
@@ -191,16 +213,14 @@ class ForsageStudio extends Component
         $this->processCategories($model, $model->main_category_id);
 
         if (isset($props['attributes'])) {
-
-
-            if (isset($props['attributes'][6]['value'])) {
+            if (isset($props['attributes'][6]['value'])) { // && $model->type_id == self::TYPE_BOOTS
 
                 $explode = explode('-', $props['attributes'][6]['value']);
 
                 $size_min = (int)$explode[0];
                 //$size_max = (int)$explode[1];
 
-                $list2 = [
+                /*$list2 = [
                     '0-20' => 'до 20',
                     '20-25' => '20-25',
                     '26-31' => '26-31',
@@ -212,7 +232,7 @@ class ForsageStudio extends Component
                     '40-45' => '40-45',
                     '41-46' => '41-46',
                     '45-99' => 'более 45'
-                ];
+                ];*/
 
                 $list = [
                     '45-99' => 'более 45',
@@ -225,26 +245,35 @@ class ForsageStudio extends Component
                     '27-32' => '27-32',
                     '26-31' => '26-31',
                     '20-25' => '20-25',
+                    '0-20' => 'до 20', //новый для 16-21
 
                 ];
                 $sizes = [];
-                foreach ($list as $key => $l) {
-                    $liste = explode('-', $key);
-                    if (in_array($size_min, range($liste[0], $liste[1]))) {
-                        // if (in_array($liste[0], range($size_min, $size_max))) {
-                        $sizes[] = $l;
-                        break;
-                    }
-                }
-                $props['attributes'][99999] = [
-                    'id' => 99999,
-                    'name' => 'Размер',
-                    'value' => $sizes[0]
-                ];
+                if ($size_min) {
+                    foreach ($list as $key => $l) {
+                        $liste = explode('-', $key);
 
+                        if (in_array($size_min, range($liste[0], $liste[1]))) {
+                            // if (in_array($liste[0], range($size_min, $size_max))) {
+                            $sizes[] = $l;
+                            break;
+                        }
+
+                    }
+                } else {
+                    $sizes[] = $props['attributes'][6]['value'];
+                }
+                if (!empty($sizes[0])) {
+                    $props['attributes'][99999] = [
+                        'id' => 99999,
+                        'name' => 'Размер',
+                        'value' => $sizes[0]
+                    ];
+                }
 
             }
-
+            //print_r($props);
+            //die;
             $this->attributeData($model, $props['attributes']);
 
         }
@@ -252,12 +281,12 @@ class ForsageStudio extends Component
 
         //set image
         if (isset($props['images'])) {
-            /*foreach ($model->getImages()->all() as $im) {
+            foreach ($model->getImages()->all() as $im) {
                 $im->delete();
             }
             foreach ($props['images'] as $file) {
                 $model->attachImage($file);
-            }*/
+            }
         }
 
 
@@ -460,7 +489,7 @@ class ForsageStudio extends Component
             $option->andWhere(['value' => (isset($data['descriptions'][0]['value'])) ? $data['descriptions'][0]['value'] : $data['value']]);
             $opt = $option->one();
             if (!$opt)
-                $opt = $this->addOptionToAttribute($attributeModel->id, ($data['descriptions']) ? $data['descriptions'] : $data['value']);
+                $opt = $this->addOptionToAttribute($attributeModel->id, $data);
 
             $attrsdata[$attributeModel->name][] = $opt->id;
 
@@ -478,13 +507,13 @@ class ForsageStudio extends Component
         $option = new AttributeOption;
         $option->attribute_id = $attribute_id;
         if (is_array($value)) {
-            $option->value = $value[0]['value'];
-            $option->value_uk = $value[1]['value'];
-            $option->value_en = $value[0]['value'];
+            $option->value = (isset($value['descriptions'][0]['value'])) ? $value['descriptions'][0]['value'] : $value['value'];
+            $option->value_uk = (isset($value['descriptions'][1]['value'])) ? $value['descriptions'][1]['value'] : $value['value'];
+            $option->value_en = (isset($value['descriptions'][0]['value'])) ? $value['descriptions'][0]['value'] : $value['value'];
         } else {
-            $option->value = $value;
-            $option->value_uk = $value;
-            $option->value_en = $value;
+            $option->value = $value['value'];
+            $option->value_uk = $value['value'];
+            $option->value_en = $value['value'];
         }
         $option->save(false);
         return $option;
@@ -496,7 +525,7 @@ class ForsageStudio extends Component
 
         $result = false;
         $result['success'] = true;
-
+        $result['currency_id'] = NULL;
         if (isset($product['characteristics'])) {
             foreach ($product['characteristics'] as $characteristic) {
                 if (!empty($characteristic['value']) && ($characteristic['value'] != '-')) {
@@ -584,9 +613,22 @@ class ForsageStudio extends Component
                 // self::log('Unknown product images error');
             }
 
+
             if ($this->getChildCategory($product)) {
-                $result['categories'][1] = $this->getChildCategory($product);
                 $result['type_id'] = $this->getTypeId($product);
+                $result['categories'][1] = $this->getChildCategory($product);
+
+                //for optikon
+                if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES) {
+                    if (in_array($result['categories'][1]['id'], array_keys($this->categories_clothes))) { //Одежда
+                        $result['type_id'] = Yii::$app->settings->get('forsage', 'cloth_type');
+                        $result['categories'][0] = 'Cloth';
+                    } else { //аксессуары
+                        $result['type_id'] = 3;
+                        $result['categories'][0] = 'Other';
+                    }
+                }
+
             } else {
                 $result['success'] = false;
                 $result['error'][] = 'Unknown product category child error';
@@ -637,9 +679,9 @@ class ForsageStudio extends Component
         if (!isset($category['child'])) {
             if (isset($category['descriptions'])) {
                 //ukraine lang
-                return $category['descriptions'][1]['name'];
+                return ['id' => $category['id'], 'name' => $category['descriptions'][1]['name']];
             } else {
-                return $category['name'];
+                return ['id' => $category['id'], 'name' => $category['name']];
             }
         } else {
             return $this->lastChildCategory($category['child']);
