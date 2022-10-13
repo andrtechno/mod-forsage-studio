@@ -10,15 +10,22 @@ use yii\helpers\ArrayHelper;
 
 class Module extends WebModule implements BootstrapInterface
 {
-    //public $apiKey = '';
+
     public $icon = '';
     public $unit = 1;
-    //public $type_id = 1;
-    //public $outStockDelete = true;
     public $onlySuppliers = [];
-    //public $hookKey;
     public $forsageClass = '\panix\mod\forsage\components\ForsageStudio';
     public $excludeCategories = [];
+    public $sizeGroup = [
+        '44-99' => '44 и более',
+        '40-45' => '40-45',
+        '38-43' => '38-43',
+        '36-41' => '36-41',
+        '31-37' => '31-37',
+        '26-32' => '26-32',
+        '20-26' => '20-26',
+        '0-20' => 'до 20',
+    ];
 
     public function bootstrap($app)
     {

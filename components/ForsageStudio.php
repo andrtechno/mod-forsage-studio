@@ -64,6 +64,9 @@ class ForsageStudio extends Component
 
         //$errors = (isset($props['error'])) ? true : false;
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
+        if (!$model && $this->product['quantity'] == 0) {
+            return false;
+        }
 
         if (!$this->product['quantity']) {
             if ($model) {
@@ -99,7 +102,7 @@ class ForsageStudio extends Component
         //$model->switch = ($this->product['quantity']) ? 1 : 0;
         if ($this->product['quantity'] == 1) {
             $model->availability = Product::STATUS_IN_STOCK; //есть на складе
-        } elseif($this->product['quantity'] < 0) {
+        } elseif ($this->product['quantity'] < 0) {
             $model->availability = Product::STATUS_PREORDER; //под заказ
         } else {
             $model->availability = Product::STATUS_OUT_STOCK; //нет на складе
@@ -139,7 +142,7 @@ class ForsageStudio extends Component
                 if ($props['price_old'] > $props['price']) {
 
 
-                    if(($props['price_old'] - $props['price']) < $props['price']){
+                    if (($props['price_old'] - $props['price']) < $props['price']) {
                         $model->discount = ($props['price_old'] - $props['price']);
                         $model->price = $props['price_old'];
                     }
@@ -158,7 +161,7 @@ class ForsageStudio extends Component
             $model->full_description_uk = $prop['description'];
         }
 
-        $full_name_category = '';
+        /*$full_name_category = '';
 
         if (isset($props['categories'][0])) {
             $main_category = $props['categories'][0];
@@ -167,10 +170,10 @@ class ForsageStudio extends Component
                 $sub_category = $props['categories'][1]['name'];
                 $full_name_category .= '/' . $sub_category;
             }
-        }
+        }*/
 
-        //$model->main_category_id = $this->getCategoryByPath($categoryName);
-        $model->main_category_id = $this->getCategoryByPath($full_name_category);
+
+        $model->main_category_id = $this->getCategoryByPath($props);
 
 
         if (isset($this->product['supplier']) && $model->isNewRecord) {
@@ -220,37 +223,9 @@ class ForsageStudio extends Component
                 $size_min = (int)$explode[0];
                 //$size_max = (int)$explode[1];
 
-                /*$list2 = [
-                    '0-20' => 'до 20',
-                    '20-25' => '20-25',
-                    '26-31' => '26-31',
-                    '27-32' => '27-32',
-                    '31-36' => '31-36',
-                    '32-37' => '32-37',
-                    '36-41' => '36-41',
-                    '39-44' => '39-44',
-                    '40-45' => '40-45',
-                    '41-46' => '41-46',
-                    '45-99' => 'более 45'
-                ];*/
-
-                $list = [
-                    '45-99' => 'более 45',
-                    '41-46' => '41-46',
-                    '40-45' => '40-45',
-                    '39-44' => '39-44',
-                    '36-41' => '36-41',
-                    '32-37' => '32-37',
-                    '31-36' => '31-36',
-                    '27-32' => '27-32',
-                    '26-31' => '26-31',
-                    '20-25' => '20-25',
-                    '0-20' => 'до 20', //новый для 16-21
-
-                ];
                 $sizes = [];
                 if ($size_min) {
-                    foreach ($list as $key => $l) {
+                    foreach (Yii::$app->getModule('forsage')->sizeGroup as $key => $l) {
                         $liste = explode('-', $key);
 
                         if (in_array($size_min, range($liste[0], $liste[1]))) {
@@ -346,7 +321,7 @@ class ForsageStudio extends Component
 
         if (isset($props['attributes'])) {
             if (isset($props['attributes'][6])) {
-                $name .= ' ' . $props['attributes'][6]['value'];
+                //$name .= ' ' . $props['attributes'][6]['value'];
             }
 
             //if (isset($props['in_box'])) {
@@ -364,9 +339,23 @@ class ForsageStudio extends Component
      * @param $path string Catalog/Shoes/Nike
      * @return integer category id
      */
-    public function getCategoryByPath($path)
+    public function getCategoryByPath($props)
     {
 
+        $path = '';
+        $sub_category_ru = '';
+
+        if (isset($props['categories'][0])) {
+            $main_category = $props['categories'][0];
+            $path = $main_category;
+            if (isset($props['categories'][1])) {
+                $sub_category = $props['categories'][1]['name_ru'];
+                $path .= '/' . $sub_category;
+                $sub_category_ru = $props['categories'][1]['name_uk'];
+            }
+        }
+        //print_r($sub_category_ru);
+        //die;
         if (isset($this->categoriesPathCache[$path]))
             return $this->categoriesPathCache[$path];
 
@@ -406,13 +395,11 @@ class ForsageStudio extends Component
             $object = explode('/', trim($name));
 
             $model = Category::find()->where(['path_hash' => md5(mb_strtolower($name))])->one();
-            //$exist = Category::find()->where(['path_hash' => md5($name)])->one();
-            //if ($exist) {
-            //    $model = $exist;
+
             if (!$model) {
                 $model = new Category;
+                $model->name_uk = $sub_category_ru;
                 $model->name_ru = end($object);
-                $model->name_uk = $model->name_ru;
                 $model->slug = CMS::slug($model->name_ru);
                 $model->appendTo($parent);
             }
@@ -679,7 +666,11 @@ class ForsageStudio extends Component
         if (!isset($category['child'])) {
             if (isset($category['descriptions'])) {
                 //ukraine lang
-                return ['id' => $category['id'], 'name' => $category['descriptions'][1]['name']];
+                return [
+                    'id' => $category['id'],
+                    'name_ru' => $category['descriptions'][0]['name'],
+                    'name_uk' => $category['descriptions'][1]['name']
+                ];
             } else {
                 return ['id' => $category['id'], 'name' => $category['name']];
             }
