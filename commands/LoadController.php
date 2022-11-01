@@ -62,6 +62,7 @@ class LoadController extends ConsoleController
             $p->delete();
         }
         $product = $this->fs->getProduct($id);
+        //print_r($product);die;
         if ($product) {
             $response = $product->execute();
         } else {
@@ -473,6 +474,9 @@ class LoadController extends ConsoleController
         $confirm = $this->confirm($confirmMsg, false);
         if ($confirm) {
             $suppliers = $this->fs->getSuppliers();
+            if(!$suppliers){
+                echo 'ERROR!';
+            }
             foreach ($suppliers as $supplier) {
                 $i = 0;
                 $rows = [];
@@ -503,7 +507,7 @@ class LoadController extends ConsoleController
             echo "\r\n";
             $this->stdout("--- Cancelled! ---\r\nYou can specify the paths using:");
             echo "\r\n\r\n";
-            $this->stdout("    php cmd forsage/load/import-all --interactive=1|0", Console::FG_BLUE);
+            $this->stdout("    php cmd forsage/load/queue-all --interactive=1|0", Console::FG_BLUE);
             echo "\r\n";
 
             return ExitCode::OK;

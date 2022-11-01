@@ -78,7 +78,7 @@ class ForsageStudio extends Component
             }
             // return false;
         }
-        self::log('Product quantity ' . $this->product['quantity']);
+        self::log('Product quantity ' . $this->product['id'] . ' - ' . $this->product['quantity']);
 
 
         if (!$props['success']) {
@@ -151,9 +151,10 @@ class ForsageStudio extends Component
                 }
             }
         }
-
-        $model->currency_id = $props['currency_id'];
-
+        $model->currency_id = null;
+        if (isset($props['currency_id'])) {
+            $model->currency_id = $props['currency_id'];
+        }
         if (isset($prop['description'])) {
             $model->short_description_ru = $prop['description'];
             $model->short_description_uk = $prop['description'];
@@ -343,7 +344,7 @@ class ForsageStudio extends Component
     {
 
         $path = '';
-        $sub_category_ru = '';
+        $sub_category_uk = '';
 
         if (isset($props['categories'][0])) {
             $main_category = $props['categories'][0];
@@ -351,9 +352,10 @@ class ForsageStudio extends Component
             if (isset($props['categories'][1])) {
                 $sub_category = $props['categories'][1]['name_ru'];
                 $path .= '/' . $sub_category;
-                $sub_category_ru = $props['categories'][1]['name_uk'];
+                $sub_category_uk = $props['categories'][1]['name_uk'];
             }
         }
+
         //print_r($sub_category_ru);
         //die;
         if (isset($this->categoriesPathCache[$path]))
@@ -398,7 +400,7 @@ class ForsageStudio extends Component
 
             if (!$model) {
                 $model = new Category;
-                $model->name_uk = $sub_category_ru;
+                $model->name_uk = end($object);
                 $model->name_ru = end($object);
                 $model->slug = CMS::slug($model->name_ru);
                 $model->appendTo($parent);
@@ -817,6 +819,8 @@ class ForsageStudio extends Component
         if (isset($response)) {
             if ($response['success'] == 'true') {
                 return $response['suppliers'];
+            } else {
+                self::log($response['message']);
             }
         }
         self::log('Method getSuppliers Error success');

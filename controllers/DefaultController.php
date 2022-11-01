@@ -30,7 +30,7 @@ class DefaultController extends Controller
                 Yii::info('push: ' . implode(',', $input['product_ids']), 'forsage');
                 foreach ($input['product_ids'] as $product_id) {
                     Yii::$app->queue->push(new ProductByIdQueue([
-                        'product' => $product_id,
+                        'id' => $product_id,
                     ]));
                 }
             }
