@@ -6,6 +6,7 @@ namespace panix\mod\forsage\components;
 use panix\mod\shop\models\Currency;
 use Yii;
 use yii\base\Component;
+use yii\base\ErrorException;
 use yii\httpclient\Client;
 use yii\helpers\Json;
 use yii\helpers\Console;
@@ -51,6 +52,9 @@ class ForsageStudio extends Component
 
     public function __construct($config = [])
     {
+        if (!extension_loaded('intl')) {
+            throw new ErrorException('PHP Extension intl not active.');
+        }
         $this->apiKey = Yii::$app->settings->get('forsage', 'apikey');
         parent::__construct($config);
     }
@@ -214,8 +218,9 @@ class ForsageStudio extends Component
         if (!$model->save(false)) {
             return false;
         }
-        $this->processCategories($model, $model->main_category_id);
-
+        if ($model->main_category_id) {
+            $this->processCategories($model, $model->main_category_id);
+        }
         if (isset($props['attributes'])) {
             if (isset($props['attributes'][6]['value'])) { // && $model->type_id == self::TYPE_BOOTS
 
@@ -410,8 +415,8 @@ class ForsageStudio extends Component
             $level++;
 
         }
-        // Cache category id
 
+        // Cache category id
         if (isset($model)) {
             $this->categoriesPathCache[$path] = $model->id;
             return $model->id;
