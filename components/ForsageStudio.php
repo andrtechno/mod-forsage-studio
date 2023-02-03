@@ -891,8 +891,6 @@ class ForsageStudio extends Component
         //$params['quantity'] = 1;
 
         $response = $this->conn_curl($url, $params);
-        print_r($response);
-        die;
         if ($response) {
             if (isset($response['success'])) {
                 if ($response['success'] == 'true') {

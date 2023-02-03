@@ -138,7 +138,32 @@ class LoadController extends ConsoleController
             Console::endProgress(false);
         }
     }
+    public function actionChangesQueue($start = 3600, $end = 0)
+    {
+        $start = eval('return ' . $start . ';');
+        $end = eval('return ' . $end . ';');
+        //for CRON
+        $end_date = time() - $end;
+        $start_date = time() - $start;
 
+        //products = "full" or "changes"
+        $this->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
+
+        $response = $this->fs->getChanges2($start_date, $end_date);
+
+        if ($response) {
+            $i = 0;
+            foreach ($response['product_ids'] as $index => $product) {
+                Yii::$app->queue->push(new ProductByIdQueue([
+                    'id' => $product,
+                ]));
+
+            }
+
+        }
+    }
     /**
      * Изменение товаров (forsage/load/changes-supplier <SUPPLIER_ID> <START> <END> --interactive=1|0)
      *
