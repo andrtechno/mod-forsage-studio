@@ -138,6 +138,7 @@ class LoadController extends ConsoleController
             Console::endProgress(false);
         }
     }
+
     public function actionChangesQueue($start = 3600, $end = 0)
     {
         $start = eval('return ' . $start . ';');
@@ -164,6 +165,7 @@ class LoadController extends ConsoleController
 
         }
     }
+
     /**
      * Изменение товаров (forsage/load/changes-supplier <SUPPLIER_ID> <START> <END> --interactive=1|0)
      *
@@ -313,66 +315,8 @@ class LoadController extends ConsoleController
         fclose($fp);
     }
 
-    public function _actionRefbooks()
-    {
-        $refbooks = $this->fs->getRefbookCharacteristics();
-        foreach ($refbooks as $ref) {
-            $attribute = Attribute::findOne(['title_ru' => $ref['name']]);
-            if ($attribute) {
 
-                if ($ref['descriptions']) {
-                    $attribute->title_uk = $ref['descriptions'][1]['name'];
-                    $attribute->title_ru = $ref['descriptions'][0]['name'];
-                } else {
-                    $attribute->title_uk = $ref['name'];
-                    $attribute->title_ru = $ref['name'];
-                }
 
-                $attribute->forsage_id = $ref['id'];
-                $attribute->save(false);
-
-                /*foreach ($ref['values'] as $value) {
-                    $option = AttributeOption::findOne(['value' => $value['value']]);
-                    if ($option) {
-                        if (isset($value['descriptions'][1])) {
-                            $option->value = $value['descriptions'][0]['name'];
-                            $option->value_uk = (isset($value['descriptions'][1])) ? $value['descriptions'][1]['name'] : $value['descriptions'][0]['name'];
-                            //$option->forsage_id = $value['id'];
-                            $option->save(false);
-
-                        } else {
-                            $option->value = $value['value'];
-                            $option->value_uk = $value['value'];
-                            //$option->forsage_id = $value['id'];
-                            $option->save(false);
-                        }
-                    }
-                }*/
-            }
-        }
-    }
-
-    public function actionTest()
-    {
-        $list = [];
-        $suppliers = $this->fs->getSuppliers();
-
-        if ($suppliers['success'] = true) {
-            $count = count($suppliers['suppliers']);
-            $i = 0;
-            Console::startProgress($i, $count, ' - ', 100);
-            foreach ($suppliers['suppliers'] as $supplier) {
-                $products = $this->fs->getSupplierProductIds($supplier['id'], ['quantity' => 1]);
-                foreach ($products as $product) {
-                    $test = $this->fs->getProduct($product);
-                    $test->execute();
-                }
-                Console::updateProgress($i, $count, ' - ');
-                $i++;
-            }
-            Console::endProgress(false);
-        }
-    }
 
     public function actionDiffSupplier()
     {
@@ -409,92 +353,6 @@ class LoadController extends ConsoleController
         }
     }
 
-    public function actionNoImg()
-    {
-        $products = Product::find()->limit(10000)->offset(40000)->all();
-        foreach ($products as $product) {
-            if (!$product->getImages()->count()) {
-                //echo Url::to($product->getUrl()).PHP_EOL;
-                $ff = $this->fs->getProduct($product->forsage_id);
-
-                if ($ff) {
-                    $ff->execute();
-                }
-            }
-        }
-    }
-
-    public function actionRemoveImg()
-    {
-        $files = glob(Yii::getAlias('@uploads/store/product/*'));
-        foreach ($files as $file) {
-            if (is_dir($file)) {
-                echo $file . PHP_EOL;
-                $product = Product::findOne(basename($file));
-                if (!$product) {
-                    echo 'remove dir ' . $file . PHP_EOL;
-                    BaseFileHelper::removeDirectory($file);
-                }
-
-            }
-        }
-
-
-        $filesAssets = glob(Yii::getAlias('@web/assets/product/*'));
-        foreach ($filesAssets as $fileAsset) {
-            if (is_dir($fileAsset)) {
-                echo $fileAsset . PHP_EOL;
-                $product = Product::findOne(basename($fileAsset));
-                if (!$product) {
-                    echo 'remove dir ' . $fileAsset . PHP_EOL;
-                    BaseFileHelper::removeDirectory($fileAsset);
-                }
-
-            }
-        }
-    }
-
-    /**
-     * Only if enable DEBUG
-     */
-    public function actionClearDb()
-    {
-        if (YII_DEBUG) {
-            $db = Yii::$app->db;
-            //$db->createCommand()->truncateTable('{{%forsage_studio}}')->execute();
-            /*$db->createCommand()->truncateTable(ProductImage::tableName())->execute();
-            $db->createCommand()->truncateTable(ProductCategoryRef::tableName())->execute();
-            $db->createCommand()->truncateTable(ProductAttributesEav::tableName())->execute();
-
-            $db->createCommand()->truncateTable(AttributeOption::tableName())->execute();
-            $db->createCommand()->truncateTable(Attribute::tableName())->execute();
-            $db->createCommand()->truncateTable(Category::tableName())->execute();*/
-
-            if ($db->createCommand('SELECT * FROM ' . Product::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
-                $db->createCommand()->truncateTable(Product::tableName() . ' WHERE forsage_id IS NOT NULL')->execute();
-            }
-            if ($db->createCommand('SELECT * FROM ' . Brand::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
-                $db->createCommand()->truncateTable(Brand::tableName() . ' WHERE forsage_id IS NOT NULL')->execute();
-            }
-            if ($db->createCommand('SELECT * FROM ' . Supplier::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
-                $db->createCommand()->truncateTable(Supplier::tableName())->execute();
-            }
-
-
-            /*$model = new Category;
-            $model->name = 'Каталог продукции';
-            $model->lft = 1;
-            $model->rgt = 2;
-            $model->depth = 1;
-            $model->slug = 'root';
-            $model->full_path = '';
-            if ($model->validate()) {
-                $model->saveNode();
-            }*/
-        } else {
-            echo 'YII_DEBUG disabled!.';
-        }
-    }
 
     public function actionQueueAll($quantity = 1)
     {
@@ -503,7 +361,7 @@ class LoadController extends ConsoleController
         $confirm = $this->confirm($confirmMsg, false);
         if ($confirm) {
             $suppliers = $this->fs->getSuppliers();
-            if(!$suppliers){
+            if (!$suppliers) {
                 echo 'ERROR!';
             }
             foreach ($suppliers as $supplier) {
@@ -543,5 +401,6 @@ class LoadController extends ConsoleController
         }
 
     }
+
 
 }
