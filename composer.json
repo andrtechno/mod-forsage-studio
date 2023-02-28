@@ -5,7 +5,6 @@
     "homepage": "https://github.com/andrtechno/mod-forsage-studio",
     "type": "pixelion-module",
     "license": "MIT",
-    "minimum-stability": "dev",
     "authors": [
         {
             "name": "PIXELION CMS",
