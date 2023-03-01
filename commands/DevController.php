@@ -237,6 +237,15 @@ class DevController extends ConsoleController
         }
     }
 
+    /**
+     * Add all products in queue
+     *
+     * @param int $quantity
+     * @return int
+     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\db\Exception
+     * @throws \yii\httpclient\Exception
+     */
     public function actionQueueAll($quantity = 1)
     {
         $confirmMsg = '';
@@ -251,38 +260,37 @@ class DevController extends ConsoleController
                 $i = 0;
                 $rows = [];
                 $products = $this->fs->getSupplierProductIds($supplier['id'], ['quantity' => $quantity]);
-                $count = count($products);
-                foreach ($products as $product) {
-                    $job = new ProductByIdQueue;
-                    $job->id = $product;
-                    $rows[] = [
-                        'default',
-                        serialize($job),
-                        time(),
-                        120,
-                        1024
-                    ];
-                    $i++;
+                if ($products) {
+                    $count = count($products);
+                    foreach ($products as $product) {
+                        $job = new ProductByIdQueue;
+                        $job->id = $product;
+                        $rows[] = [
+                            'default',
+                            serialize($job),
+                            time(),
+                            120,
+                            1024
+                        ];
+                        $i++;
+                    }
+                    Yii::$app->db->createCommand()->batchInsert(Yii::$app->queue->tableName, [
+                        'channel',
+                        'job',
+                        'pushed_at',
+                        'ttr',
+                        'priority'
+                    ], $rows)->execute();
                 }
-                Yii::$app->db->createCommand()->batchInsert(Yii::$app->queue->tableName, [
-                    'channel',
-                    'job',
-                    'pushed_at',
-                    'ttr',
-                    'priority'
-                ], $rows)->execute();
             }
-
         } else {
             echo "\r\n";
             $this->stdout("--- Cancelled! ---\r\nYou can specify the paths using:");
             echo "\r\n\r\n";
             $this->stdout("    php cmd forsage/load/queue-all --interactive=1|0", Console::FG_BLUE);
             echo "\r\n";
-
             return ExitCode::OK;
         }
-
     }
 
     public function actionImageMain($page = 0, $limit = 10000)
