@@ -5,6 +5,7 @@ use panix\engine\bootstrap\ActiveForm;
 use yii\helpers\ArrayHelper;
 use panix\mod\shop\models\ProductType;
 use yii\web\View;
+
 /**
  * @var \panix\engine\bootstrap\ActiveForm $form
  * @var \panix\mod\forsage\models\SettingsForm $model
@@ -17,10 +18,9 @@ $fs = new $forsageClass;
 ?>
 
 
-
 <?php
-echo Yii::$app->bs;
-$form = ActiveForm::begin(['id'=>'forsage-form']);
+
+$form = ActiveForm::begin(['id' => 'forsage-form']);
 //560406
 //811645 обвусь унисекс
 //790624 обувь.украина
@@ -30,76 +30,64 @@ $product = $fs->getProduct(784824);
 //\panix\engine\CMS::dump($product->product);
 //\panix\engine\CMS::dump($fs->getProductProps($product->product));
 $types = ArrayHelper::map(ProductType::find()->all(), 'id', 'name');
-$categories = $model->getCategories(0,9);
+$categories = $model->getCategories(0, 9);
 ?>
 
 
+    <div class="card">
+        <div class="card-header">
+            <h5><?= $this->context->pageName ?></h5>
+        </div>
+        <div class="card-body">
+            <?php
 
-<div class="card">
-    <div class="card-header">
-        <h5><?= $this->context->pageName ?></h5>
+            $tabs = [];
+            $tabs[] = [
+                'label' => $model::t('TAB_MAIN'),
+                'content' => $this->render('_main', ['form' => $form, 'model' => $model, 'types' => $types]),
+                'active' => true,
+                'options' => ['class' => 'flex-sm-fill text-center nav-item'],
+            ];
+            $tabs[] = [
+                'label' => $model::t('TAB_CHOTLES'),
+                'content' => $this->render('_clothes', ['form' => $form, 'model' => $model, 'types' => $types, 'categories' => $categories]),
+                'headerOptions' => [],
+                'options' => ['class' => 'flex-sm-fill text-center nav-item'],
+            ];
+            $tabs[] = [
+                'label' => $model::t('TAB_BAGS'),
+                'content' => $this->render('_bags', ['form' => $form, 'model' => $model, 'types' => $types, 'categories' => $categories]),
+                'headerOptions' => [],
+                'options' => ['class' => 'flex-sm-fill text-center nav-item'],
+            ];
+
+            echo \panix\engine\bootstrap\Tabs::widget([
+                //'encodeLabels'=>true,
+                'options' => [
+                    'class' => 'nav-pills flex-column flex-sm-row nav-tabs-static'
+                ],
+                'items' => $tabs,
+            ]);
+
+            ?>
+
+
+        </div>
+        <div class="card-footer text-center">
+            <?= $model->submitButton(); ?>
+        </div>
     </div>
-    <div class="card-body">
-        <?php
-
-        $tabs = [];
-        $tabs[] = [
-            'label' => $model::t('TAB_MAIN'),
-            'content' => $this->render('_main', ['form' => $form, 'model' => $model,'types'=>$types]),
-            'active' => true,
-            'options' => ['class' => 'flex-sm-fill text-center nav-item'],
-        ];
-        $tabs[] = [
-            'label' => $model::t('TAB_CHOTLES'),
-            'content' => $this->render('_clothes', ['form' => $form, 'model' => $model,'types'=>$types,'categories'=>$categories]),
-            'headerOptions' => [],
-            'options' => ['class' => 'flex-sm-fill text-center nav-item'],
-        ];
-        $tabs[] = [
-            'label' => $model::t('TAB_BAGS'),
-            'content' => $this->render('_bags', ['form' => $form, 'model' => $model,'types'=>$types,'categories'=>$categories]),
-            'headerOptions' => [],
-            'options' => ['class' => 'flex-sm-fill text-center nav-item'],
-        ];
-
-        echo \panix\engine\bootstrap\Tabs::widget([
-            //'encodeLabels'=>true,
-            'options' => [
-                'class' => 'nav-pills flex-column flex-sm-row nav-tabs-static'
-            ],
-            'items' => $tabs,
-        ]);
-
-        ?>
-
-
-
-
-
-
-
-
-    </div>
-    <div class="card-footer text-center">
-        <?= $model->submitButton(); ?>
-    </div>
-</div>
 
     <div class="card">
-    <div class="card-header">
-        <h5>Guides</h5>
-    </div>
-    <div class="card-body p-3">
-    <?php
-
-
-    $content = file_get_contents(Yii::getAlias('@forsage') . DIRECTORY_SEPARATOR . 'guide.md');
-
-
-echo \yii\helpers\Markdown::process($content, 'gfm');
-
-    ?>
-    </div>
+        <div class="card-header">
+            <h5>Guides</h5>
+        </div>
+        <div class="card-body p-3">
+            <?php
+            $content = file_get_contents(Yii::getAlias('@forsage') . DIRECTORY_SEPARATOR . 'guide.md');
+            echo \yii\helpers\Markdown::process($content, 'gfm');
+            ?>
+        </div>
     </div>
 
 <?php ActiveForm::end(); ?>
@@ -161,7 +149,7 @@ if (isset($_POST['categories_clothes']) && !empty($_POST['categories_clothes']))
 
     //$model->categories_bags = explode(',',$model->categories_bags);
     //$model->categories_cloth = explode(',',$model->categories_cloth);
-   // foreach ($model->categories_bags as $c) {
+    // foreach ($model->categories_bags as $c) {
     //    $this->registerJs("$('#CategoriesBags').checkNode({$c});", View::POS_END, 'check-b-' . $c);
     //}
 

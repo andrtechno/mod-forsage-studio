@@ -1,4 +1,7 @@
-<div class="alert alert-info"><?= Yii::t('forsage/default','CATEGORIES_HIT'); ?></div>
+<div class="form-group">
+    <div class="alert alert-info"><?= Yii::t('forsage/default','CATEGORIES_HIT'); ?></div>
+</div>
+
 <?php echo $form->field($model, 'clothes_type')->dropdownList($types, ['prompt' => '---'])->hint($model::t('TYPE_HINT')); ?>
 <div class="form-group row required">
     <label class="col-sm-2 col-form-label" for="settingsform-1">cloths</label>

@@ -18,10 +18,6 @@ class SettingsController extends AdminController
     {
         $this->pageName = Yii::t('app/default', 'SETTINGS');
         $this->view->params['breadcrumbs'] = [
-            [
-                'label' => $this->module->info['label'],
-                'url' => $this->module->info['url'],
-            ],
             $this->pageName
         ];
 
