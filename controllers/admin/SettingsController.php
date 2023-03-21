@@ -28,7 +28,7 @@ class SettingsController extends AdminController
         $this->buttons = [
             [
                 'icon' => 'export',
-                'label' => Yii::t('shop/admin', 'export contacts'),
+                'label' => Yii::t('forsage/default', 'BUTTON_EXPORT'),
                 'url' => ['export'],
                 'options' => ['class' => 'btn btn-success']
             ]
@@ -36,6 +36,7 @@ class SettingsController extends AdminController
 
         $model = new SettingsForm();
         if ($model->load(Yii::$app->request->post())) {
+            //print_r(Yii::$app->request->post());die;
             if ($model->validate()) {
                 $model->save();
                 Yii::$app->session->setFlash("success", Yii::t('app/default', 'SUCCESS_UPDATE'));

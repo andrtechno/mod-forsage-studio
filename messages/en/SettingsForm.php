@@ -5,6 +5,11 @@ return [
     'APIKEY' => 'API key',
     'HOOK_KEY' => 'Hash key of push notifications',
     'BOOTS_TYPE' => 'Type of goods for shoes',
-    'CLOTH_TYPE' => 'Type of goods for clothes and accessories',
-    'TYPE_HINT' => 'If nothing is selected, this product type will not be imported.'
+    'CLOTHES_TYPE' => 'Type of goods for clothes',
+    'BAGS_TYPE' => 'Type of goods for bags',
+    'ACCESSORIES_TYPE' => 'Type of goods for accessories',
+    'TYPE_HINT' => 'If nothing is selected, this product type will not be imported.',
+    'TAB_MAIN' => 'Main',
+    'TAB_BAGS' => 'Bags',
+    'TAB_CHOTLES' => 'Clothes',
 ];

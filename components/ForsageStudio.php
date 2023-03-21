@@ -30,7 +30,7 @@ class ForsageStudio extends Component
     protected $data;
     protected $rootCategory = null;
     private $subCategoryPattern = '/\\/((?:[^\\\\\/]|\\\\.)*)/';
-
+    private $_eav = [];
     protected $categoriesPathCache = [],
         $productTypeCache = [],
         $brandCache = [],
@@ -48,10 +48,14 @@ class ForsageStudio extends Component
     const TYPE_BOOTS_KIDS = 4;
     const TYPE_CLOTHES = 3;
     const TYPE_ACCESSORIES = 2;
-
+    public $categories_clothes = [];
+    public $categories_bags = [];
 
     public function __construct($config = [])
     {
+        $cfg = Yii::$app->settings->get('forsage');
+        $this->categories_clothes = explode(',',$cfg->categories_clothes);
+        $this->categories_bags = explode(',',$cfg->categories_bags);
         if (!extension_loaded('intl')) {
             throw new ErrorException('PHP Extension intl not active.');
         }
@@ -61,11 +65,11 @@ class ForsageStudio extends Component
 
     public function execute()
     {
-        //$tr = Yii::$app->db->beginTransaction();
-        //try {
+
+        $this->_eav = []; //clear eav for elastic
 
         $props = $this->getProductProps($this->product);
-
+//print_r($props);die;
         //$errors = (isset($props['error'])) ? true : false;
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
         if (!$model && $this->product['quantity'] == 0) {
@@ -98,12 +102,14 @@ class ForsageStudio extends Component
             $model->created_at = $this->product['photosession_date'];
         }
         //$categoryName = $this->generateCategory($this->product);
-        $model->name_ru = $this->generateProductName($this->product);
-        $model->name_uk = $model->name_ru;
-        $model->slug = CMS::slug($model->name);
+        $model->name_ru = $this->generateProductName(0);
+        $model->name_uk = $this->generateProductName(1);
+        $model->slug = CMS::slug($model->name_uk);
         $model->unit = Yii::$app->getModule('forsage')->unit;
 
-        //$model->switch = ($this->product['quantity']) ? 1 : 0;
+        $model->switch = 1;
+        $model->ukraine = (isset($props['ukraine'])) ? $props['ukraine'] : 0;
+        $model->leather = (isset($props['leather'])) ? $props['leather'] : 0;
         if ($this->product['quantity'] == 1) {
             $model->availability = Product::STATUS_IN_STOCK; //есть на складе
         } elseif ($this->product['quantity'] < 0) {
@@ -111,7 +117,6 @@ class ForsageStudio extends Component
         } else {
             $model->availability = Product::STATUS_OUT_STOCK; //нет на складе
         }
-        // print_r($this->product);die;
 
 
         /*//цена за ящик
@@ -127,7 +132,12 @@ class ForsageStudio extends Component
 
 
         $model->price_purchase = (isset($props['price_purchase'])) ? $props['price_purchase'] : 0;
-        $model->in_box = (isset($props['in_box'])) ? $props['in_box']['value'] : NULL;
+        $model->in_box = (isset($props['in_box'])) ? $props['in_box']['value'] : 1;
+
+        $model->quantity_min = (isset($props['in_box'])) ? $props['in_box']['value'] : 1;
+        //$model->quantity_step = (isset($props['in_box'])) ? $props['in_box']['value'] : 1;
+
+
 //print_r($this->product['quantity']);die;
         $model->quantity = 1;//$this->product['quantity'];
 
@@ -144,14 +154,10 @@ class ForsageStudio extends Component
                     $model->price = $props['price_old'];
                 }*/
                 if ($props['price_old'] > $props['price']) {
-
-
                     if (($props['price_old'] - $props['price']) < $props['price']) {
                         $model->discount = ($props['price_old'] - $props['price']);
                         $model->price = $props['price_old'];
                     }
-
-
                 }
             }
         }
@@ -193,122 +199,181 @@ class ForsageStudio extends Component
                 $supplier->save(false);
             }
             $model->supplier_id = $supplier->id;
-
-
         }
-        $model->brand_id = null;
-        if (isset($this->product['brand'])) {
-            if (isset($this->product['brand']['name'])) {
-                if ($this->product['brand']['name'] != 'No brand') {
-                    $brand = Brand::findOne(['forsage_id' => $this->product['brand']['id']]);
-                    if (!$brand) {
-                        $brand = new Brand;
-                        $brand->name_ru = $this->product['brand']['name'];
-                        $brand->name_uk = $this->product['brand']['name'];
-                        $brand->forsage_id = $this->product['brand']['id'];
-                        $brand->slug = CMS::slug($brand->name);
-                        $brand->save(false);
 
+
+        //Записывать бренд как бренд или как поставщика.
+        if (false) {
+            $model->brand_id = null;
+            if (isset($this->product['brand'])) {
+                if (isset($this->product['brand']['name'])) {
+                    if ($this->product['brand']['name'] != 'No brand') {
+                        $brand = Brand::findOne(['forsage_id' => $this->product['brand']['id']]);
+                        if (!$brand) {
+                            $brand = new Brand;
+                            $brand->name_ru = $this->product['brand']['name'];
+                            $brand->name_uk = $this->product['brand']['name'];
+                            $brand->forsage_id = $this->product['brand']['id'];
+                            $brand->slug = CMS::slug($brand->name);
+                            $brand->save(false);
+
+                        }
+                        $model->brand_id = $brand->id;
                     }
-                    $model->brand_id = $brand->id;
                 }
             }
+        } else {
+            if (isset($this->product['supplier']) && $model->isNewRecord) {
+                $brand = Brand::findOne(['forsage_id' => $this->product['supplier']['id']]);
+                if (!$brand) {
+                    $brand = new Brand;
+                    $brand->name_ru = $this->product['supplier']['company'];
+                    $brand->name_uk = $this->product['supplier']['company'];
+                    $brand->forsage_id = $this->product['supplier']['id'];
+                    $brand->slug = CMS::slug($brand->name);
+                    $brand->save(false);
+
+                }
+                $model->brand_id = $brand->id;
+            }
         }
+
 
         if (!$model->save(false)) {
             return false;
         }
+
         if ($model->main_category_id) {
             $this->processCategories($model, $model->main_category_id);
         }
         if (isset($props['attributes'])) {
             if (isset($props['attributes'][6]['value'])) { // && $model->type_id == self::TYPE_BOOTS
+                if (preg_match('/^(\d+)\-(\d+)$/', $props['attributes'][6]['value'], $match)) { // check 11-22
+                    $explode = explode('-', $props['attributes'][6]['value']);
 
-                $explode = explode('-', $props['attributes'][6]['value']);
+                    $size_min = (int)$explode[0];
+                    //$size_max = (int)$explode[1];
 
-                $size_min = (int)$explode[0];
-                //$size_max = (int)$explode[1];
+                    $sizes = [];
+                    //if ($size_min) { //comment for 0-12 size "0" = false;
+                        foreach (Yii::$app->getModule('forsage')->sizeGroup as $key => $l) {
+                            $liste = explode('-', $key);
+                            if (in_array($size_min, range($liste[0], $liste[1]))) {
+                                // if (in_array($liste[0], range($size_min, $size_max))) {
+                                $sizes[] = $l;
+                                break;
+                            }
 
-                $sizes = [];
-                if ($size_min) {
-                    foreach (Yii::$app->getModule('forsage')->sizeGroup as $key => $l) {
-                        $liste = explode('-', $key);
-
-                        if (in_array($size_min, range($liste[0], $liste[1]))) {
-                            // if (in_array($liste[0], range($size_min, $size_max))) {
-                            $sizes[] = $l;
-                            break;
                         }
-
+                    //} else {
+                    //    $sizes[] = $props['attributes'][6]['value'];
+                   // }
+                    if (!empty($sizes[0])) {
+                        $props['attributes'][99999] = [
+                            'id' => 99999,
+                            'name' => 'Размер обуви',
+                            'value' => $sizes[0]
+                        ];
                     }
-                } else {
-                    $sizes[] = $props['attributes'][6]['value'];
-                }
-                if (!empty($sizes[0])) {
-                    $props['attributes'][99999] = [
-                        'id' => 99999,
+                } elseif (preg_match('/^([a-zA-Z+])\-([a-zA-Z+])$/', $props['attributes'][6]['value'], $match)) { // check S-XL
+                    $props['attributes'][99998] = [
+                        'id' => 99998,
                         'name' => 'Размер',
-                        'value' => $sizes[0]
+                        'value' => $props['attributes'][6]['value']
                     ];
                 }
 
             }
-            //print_r($props);
-            //die;
             $this->attributeData($model, $props['attributes']);
-
         }
 
 
         //set image
-        if (isset($props['images'])) {
+        /*if (isset($props['images'])) {
             foreach ($model->getImages()->all() as $im) {
                 $im->delete();
             }
             foreach ($props['images'] as $file) {
                 $model->attachImage($file);
             }
+        }*/
+
+
+        if (Yii::$app->get('elasticsearch')) {
+            $options = [];
+            $options['name'] = $model->name;
+            // $optionse['name_ru'] = $this->name_ru;
+            //$optionse['name_uk'] = $this->name_uk;
+            if ($model->currency_id) {
+                $currency = Currency::findOne($model->currency_id);
+                $options['price'] = (double)$model->price * $currency->rate;
+            } else {
+                $options['price'] = (double)$model->price;
+            }
+            $options['brand_id'] = $model->brand_id;
+            $options['slug'] = $model->slug;
+            $options['created_at'] = (int)$model->created_at;
+            $options['availability'] = (int)$model->availability;
+            $options['sku'] = $model->sku;
+            $options['switch'] = (int)$model->switch;
+            $options['discount'] = (int)$model->discount;
+            $options['leather'] = (int)$model->leather;
+            $options['ukraine'] = (int)$model->ukraine;
+            $options['options'] = $this->_eav;
+            //$eav = $model->getEavAttributes();
+
+            /*foreach ($eav as $e) {
+                foreach ($e as $o) {
+                    $options['options'][] = $o;
+                }
+            }*/
+
+            $options['categories'][] = $model->main_category_id;
+            foreach ($model->categorization as $category) {
+                $options['categories'][] = $category->category;
+            }
+            $options['categories'] = array_unique($options['categories']);
+            $result = Yii::$app->elasticsearch->post('product/_doc/' . $model->id, [], Json::encode($options));
+
         }
 
-
-        //    $tr->commit();
-        //} catch (Exception $e) {
-        //    self::log('no add ' . $this->product['id']);
-        //    $tr->rollBack();
-        //}
         return true;
-
     }
 
 
-    private function generateCategory($product)
+    /**
+     * @param $product
+     * @param int $index 0=ru, 1=uk
+     * @return string
+     */
+    private function generateCategory($index = 0)
     {
+        // print_r($this->product);
         $categoryName = '';
-        if ($product['category']) {
-            if (isset($product['category']['descriptions'])) {
-                $categoryName = $product['category']['descriptions'][1]['name'];
-                if (isset($product['category']['child']['descriptions'])) {
-                    $categoryName .= '/' . $product['category']['child']['descriptions'][1]['name'];
+        if ($this->product['category']) {
+            if (isset($this->product['category']['descriptions'])) {
+                $categoryName = $this->product['category']['descriptions'][$index]['name'];
+                if (isset($this->product['category']['child']['descriptions'])) {
+                    $categoryName .= '/' . $this->product['category']['child']['descriptions'][$index]['name'];
                 }
             } else {
-                $categoryName = $product['category']['name'];
-                if (isset($product['category']['child'])) {
-                    $categoryName .= '/' . $product['category']['child']['name'];
+                $categoryName = $this->product['category']['name'];
+                if (isset($this->product['category']['child'])) {
+                    $categoryName .= '/' . $this->product['category']['child']['name'];
                 }
             }
 
         }
-        //echo $categoryName;die;
         return $categoryName;
     }
 
-    private function generateProductName($product)
+    private function generateProductName($index = 0)
     {
         $name = '';
-        $category = explode('/', $this->generateCategory($product));
+        $category = explode('/', $this->generateCategory($index));
         $category = array_pop($category);
         $name .= $category;
-        if (isset($product['brand'])) {
+        /*if (isset($product['brand'])) {
             if (isset($product['brand']['name'])) {
                 if ($product['brand']['name'] == 'No brand') {
                     $name .= ' ' . $product['supplier']['company'];
@@ -318,12 +383,17 @@ class ForsageStudio extends Component
             } else {
                 $name .= $category;
             }
-        }
-        if (isset($product['vcode'])) {
-            $name .= ' ' . $product['vcode'];
+        }*/
+
+
+        $name .= ' ' . $this->product['supplier']['company'];
+
+
+        if (isset($this->product['vcode'])) {
+            $name .= ' ' . $this->product['vcode'];
         }
 
-        $props = $this->getProductProps($product);
+        $props = $this->getProductProps($this->product);
 
         if (isset($props['attributes'])) {
             if (isset($props['attributes'][6])) {
@@ -486,7 +556,7 @@ class ForsageStudio extends Component
                 $opt = $this->addOptionToAttribute($attributeModel->id, $data);
 
             $attrsdata[$attributeModel->name][] = $opt->id;
-
+            $this->_eav[] = $opt->id;
 
         }
         if (!empty($attrsdata)) {
@@ -535,13 +605,13 @@ class ForsageStudio extends Component
                         }
                     }
                     if ($characteristic['id'] == 25) { //Цена продажи
-                        $result['price'] = trim($characteristic['value']);
+                        $result['price'] = str_replace(',','.',trim($characteristic['value']));
                     }
                     if ($characteristic['id'] == 47) { //Старая цена продажи
-                        $result['price_old'] = trim($characteristic['value']);
+                        $result['price_old'] = str_replace(',','.',trim($characteristic['value']));
                     }
                     if ($characteristic['id'] == 24) { //Цена закупки
-                        $result['price_purchase'] = trim($characteristic['value']);
+                        $result['price_purchase'] = str_replace(',','.',trim($characteristic['value']));
                     }
                     if ($characteristic['id'] == 1) { //Описание
                         $result['description'] = trim($characteristic['value']);
@@ -738,6 +808,23 @@ class ForsageStudio extends Component
                 return $response['product_ids'];
             } else {
                 print_r($response);
+                self::log($supplier_id . " - " . $response['message']);
+            }
+        } else {
+            self::log('Method getSupplierProductIds Error success SID: ' . $supplier_id);
+        }
+        return false;
+    }
+
+    public function getCategories($with_descriptions = 1)
+    {
+        $url = "https://forsage-studio.com/api/get_categories";
+        $params['with_descriptions'] = $with_descriptions;
+        $response = $this->conn_curl($url, $params);
+        if (isset($response['success'])) {
+            if ($response['success'] == 'true') {
+                return $response['categories'];
+            } else {
                 self::log($supplier_id . " - " . $response['message']);
             }
         } else {

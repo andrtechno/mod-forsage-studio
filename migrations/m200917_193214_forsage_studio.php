@@ -16,7 +16,7 @@ use panix\mod\shop\models\Brand;
 use panix\mod\shop\models\Attribute;
 use panix\mod\shop\models\AttributeOption;
 
-class m180917_193214_forsage_studio extends Migration
+class m200917_193214_forsage_studio extends Migration
 {
 
     public $settingsForm = 'panix\mod\forsage\models\SettingsForm';
@@ -24,19 +24,9 @@ class m180917_193214_forsage_studio extends Migration
     public function up()
     {
         $tableOptions = 'CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci ENGINE=InnoDB';
-       /* $this->createTable('{{%forsage_studio}}', [
-            'id' => $this->primaryKey()->unsigned(),
-            'object_id' => $this->integer()->unsigned()->null(),
-            'object_type' => $this->tinyInteger()->null(),
-            'external_id' => $this->integer()->unsigned()->null(),
-            'external_data' => $this->string(255)->null(),
-        ], $tableOptions);
-
-        $this->createIndex('object_id', '{{%forsage_studio}}', 'object_id');
-        $this->createIndex('object_type', '{{%forsage_studio}}', 'object_type');
-        $this->createIndex('external_id', '{{%forsage_studio}}', 'external_id');*/
         $this->addColumn(Product::tableName(), 'forsage_id', 'int');
-        $this->addColumn(Product::tableName(), 'in_box', 'int');
+        $this->addColumn(Product::tableName(), 'ukraine', $this->boolean()->defaultValue(0));
+        $this->addColumn(Product::tableName(), 'leather', $this->boolean()->defaultValue(0));
         $this->addColumn(Supplier::tableName(), 'forsage_id', 'int');
         $this->addColumn(Brand::tableName(), 'forsage_id', 'int');
         $this->addColumn(Attribute::tableName(), 'forsage_id', 'int');
@@ -50,9 +40,10 @@ class m180917_193214_forsage_studio extends Migration
 
     public function down()
     {
-        //$this->dropTable('{{%forsage_studio}}');
+
         $this->dropColumn(Product::tableName(), 'forsage_id');
-        $this->dropColumn(Product::tableName(), 'in_box');
+        $this->dropColumn(Product::tableName(), 'ukraine');
+        $this->dropColumn(Product::tableName(), 'leather');
         $this->dropColumn(Supplier::tableName(), 'forsage_id');
         $this->dropColumn(Brand::tableName(), 'forsage_id');
         $this->dropColumn(Attribute::tableName(), 'forsage_id');
