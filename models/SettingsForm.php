@@ -21,16 +21,17 @@ class SettingsForm extends SettingsModel
     public $categories_clothes;
     public $categories_bags;
     public $accessories_type;
+    public $brand;
 
     public function rules()
     {
         return [
-            [['hook_key', 'apikey'], "required"],
+            [['hook_key', 'apikey', 'brand'], "required"],
             //[['product_related_bilateral', 'group_attribute', 'smart_bc', 'smart_title'], 'boolean'],
             [['boots_type', 'clothes_type', 'bags_type', 'accessories_type'], 'integer'],
             [['boots_type', 'clothes_type', 'bags_type', 'accessories_type'], 'default'],
             [['apikey', 'hook_key', 'categories_clothes', 'categories_bags'], 'string'],
-            [['out_stock_delete'], 'boolean'],
+            [['out_stock_delete', 'brand'], 'boolean'],
             ['apikey', 'match', 'pattern' => "/^[a-zA-Z0-9\._\-]+$/u"],
             ['hook_key', 'match', 'pattern' => "/^[a-zA-Z0-9]+$/u", 'message' => 'Только буквы и цифры'],
         ];
@@ -49,6 +50,7 @@ class SettingsForm extends SettingsModel
             'clothes_type' => '',
             'bags_type' => '',
             'boots_type' => '',
+            'brand' => true,
             'categories_bags' => '18,40,10,41,175,42,49,35,106,63,50',
             'categories_clothes' => '100,94,93,104,74,89,66,92,90,69,85,98,83,88,87,91,76,101,47,72,96,84,97,99,95,103,86,107,82,102,109,110,124,178,136,139,155,152,160,119,116,123,117,113,156,149,174,150,111,148,126,153,114,112,108,70',
         ];
@@ -71,17 +73,16 @@ class SettingsForm extends SettingsModel
         $result = [];
 
         $categories = $fs->getCategories($with_descriptions);
-
-        foreach ($categories as $category) {
-
-            $result[] = [
-                'id' => $category['id'],
-                'text' => $category['name'],
-                'parent_id' => $category['parent_id'],
-                'state' => ['opened' => true],
-            ];
+        if ($categories) {
+            foreach ($categories as $category) {
+                $result[] = [
+                    'id' => $category['id'],
+                    'text' => $category['name'],
+                    'parent_id' => $category['parent_id'],
+                    'state' => ['opened' => true],
+                ];
+            }
         }
-
 
         //return $test;
         return $this->buildTree($result, $parentId);

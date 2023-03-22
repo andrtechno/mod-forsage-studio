@@ -50,12 +50,13 @@ class ForsageStudio extends Component
     const TYPE_ACCESSORIES = 2;
     public $categories_clothes = [];
     public $categories_bags = [];
+    public $settings;
 
     public function __construct($config = [])
     {
-        $cfg = Yii::$app->settings->get('forsage');
-        $this->categories_clothes = explode(',',$cfg->categories_clothes);
-        $this->categories_bags = explode(',',$cfg->categories_bags);
+        $this->settings = Yii::$app->settings->get('forsage');
+        $this->categories_clothes = explode(',', $this->settings->categories_clothes);
+        $this->categories_bags = explode(',', $this->settings->categories_bags);
         if (!extension_loaded('intl')) {
             throw new ErrorException('PHP Extension intl not active.');
         }
@@ -203,9 +204,23 @@ class ForsageStudio extends Component
 
 
         //Записывать бренд как бренд или как поставщика.
-        if (false) {
+        if ($this->settings->brand) {
+            if (isset($this->product['supplier']) && $model->isNewRecord) {
+                $brand = Brand::findOne(['forsage_id' => $this->product['supplier']['id']]);
+                if (!$brand) {
+                    $brand = new Brand;
+                    $brand->name_ru = $this->product['supplier']['company'];
+                    $brand->name_uk = $this->product['supplier']['company'];
+                    $brand->forsage_id = $this->product['supplier']['id'];
+                    $brand->slug = CMS::slug($brand->name);
+                    $brand->save(false);
+
+                }
+                $model->brand_id = $brand->id;
+            }
+        } else {
             $model->brand_id = null;
-            if (isset($this->product['brand'])) {
+            if (isset($this->product['brand']) && $model->isNewRecord) {
                 if (isset($this->product['brand']['name'])) {
                     if ($this->product['brand']['name'] != 'No brand') {
                         $brand = Brand::findOne(['forsage_id' => $this->product['brand']['id']]);
@@ -221,20 +236,6 @@ class ForsageStudio extends Component
                         $model->brand_id = $brand->id;
                     }
                 }
-            }
-        } else {
-            if (isset($this->product['supplier']) && $model->isNewRecord) {
-                $brand = Brand::findOne(['forsage_id' => $this->product['supplier']['id']]);
-                if (!$brand) {
-                    $brand = new Brand;
-                    $brand->name_ru = $this->product['supplier']['company'];
-                    $brand->name_uk = $this->product['supplier']['company'];
-                    $brand->forsage_id = $this->product['supplier']['id'];
-                    $brand->slug = CMS::slug($brand->name);
-                    $brand->save(false);
-
-                }
-                $model->brand_id = $brand->id;
             }
         }
 
@@ -256,18 +257,18 @@ class ForsageStudio extends Component
 
                     $sizes = [];
                     //if ($size_min) { //comment for 0-12 size "0" = false;
-                        foreach (Yii::$app->getModule('forsage')->sizeGroup as $key => $l) {
-                            $liste = explode('-', $key);
-                            if (in_array($size_min, range($liste[0], $liste[1]))) {
-                                // if (in_array($liste[0], range($size_min, $size_max))) {
-                                $sizes[] = $l;
-                                break;
-                            }
-
+                    foreach (Yii::$app->getModule('forsage')->sizeGroup as $key => $l) {
+                        $liste = explode('-', $key);
+                        if (in_array($size_min, range($liste[0], $liste[1]))) {
+                            // if (in_array($liste[0], range($size_min, $size_max))) {
+                            $sizes[] = $l;
+                            break;
                         }
+
+                    }
                     //} else {
                     //    $sizes[] = $props['attributes'][6]['value'];
-                   // }
+                    // }
                     if (!empty($sizes[0])) {
                         $props['attributes'][99999] = [
                             'id' => 99999,
@@ -299,7 +300,7 @@ class ForsageStudio extends Component
         }*/
 
 
-        if (Yii::$app->get('elasticsearch')) {
+        if (Yii::$app->has('elasticsearch')) {
             $options = [];
             $options['name'] = $model->name;
             // $optionse['name_ru'] = $this->name_ru;
@@ -605,13 +606,13 @@ class ForsageStudio extends Component
                         }
                     }
                     if ($characteristic['id'] == 25) { //Цена продажи
-                        $result['price'] = str_replace(',','.',trim($characteristic['value']));
+                        $result['price'] = str_replace(',', '.', trim($characteristic['value']));
                     }
                     if ($characteristic['id'] == 47) { //Старая цена продажи
-                        $result['price_old'] = str_replace(',','.',trim($characteristic['value']));
+                        $result['price_old'] = str_replace(',', '.', trim($characteristic['value']));
                     }
                     if ($characteristic['id'] == 24) { //Цена закупки
-                        $result['price_purchase'] = str_replace(',','.',trim($characteristic['value']));
+                        $result['price_purchase'] = str_replace(',', '.', trim($characteristic['value']));
                     }
                     if ($characteristic['id'] == 1) { //Описание
                         $result['description'] = trim($characteristic['value']);
@@ -685,7 +686,7 @@ class ForsageStudio extends Component
                 //for optikon
                 if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES) {
                     if (in_array($result['categories'][1]['id'], array_keys($this->categories_clothes))) { //Одежда
-                        $result['type_id'] = Yii::$app->settings->get('forsage', 'cloth_type');
+                        $result['type_id'] = Yii::$app->settings->get('forsage', 'clothes_type');
                         $result['categories'][0] = 'Cloth';
                     } else { //аксессуары
                         $result['type_id'] = 3;
@@ -713,8 +714,8 @@ class ForsageStudio extends Component
     public function getTypeId($product)
     {
         if (isset($product['category'])) {
-            if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && Yii::$app->settings->get('forsage', 'cloth_type')) {
-                return Yii::$app->settings->get('forsage', 'cloth_type');
+            if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && Yii::$app->settings->get('forsage', 'clothes_type')) {
+                return Yii::$app->settings->get('forsage', 'clothes_type');
             } elseif ($product['category']['id'] == self::CATEGORY_BOOTS && Yii::$app->settings->get('forsage', 'boots_type')) {
                 return Yii::$app->settings->get('forsage', 'boots_type');
             }
@@ -726,9 +727,9 @@ class ForsageStudio extends Component
     {
         $flag = false;
         if (isset($product['category'])) {
-            if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && Yii::$app->settings->get('forsage', 'cloth_type')) {
+            if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && $this->settings->clothes_type) {
                 $flag = true;
-            } elseif ($product['category']['id'] == self::CATEGORY_BOOTS && Yii::$app->settings->get('forsage', 'boots_type')) {
+            } elseif ($product['category']['id'] == self::CATEGORY_BOOTS && $this->settings->boots_type) {
                 $flag = true;
             }
             if ($flag) {
@@ -825,7 +826,7 @@ class ForsageStudio extends Component
             if ($response['success'] == 'true') {
                 return $response['categories'];
             } else {
-                self::log($supplier_id . " - " . $response['message']);
+                self::log($response['message']);
             }
         } else {
             self::log('Method getSupplierProductIds Error success SID: ' . $supplier_id);

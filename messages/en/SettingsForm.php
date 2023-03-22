@@ -12,4 +12,5 @@ return [
     'TAB_MAIN' => 'Main',
     'TAB_BAGS' => 'Bags',
     'TAB_CHOTLES' => 'Clothes',
+    'BRAND' => 'Is the brand a supplier?'
 ];
