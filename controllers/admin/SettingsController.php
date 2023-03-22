@@ -109,4 +109,16 @@ class SettingsController extends AdminController
 
     }
 
+    public function actionUpdate($id)
+    {
+        $forsageClass = Yii::$app->getModule('forsage')->forsageClass;
+        $fs = new $forsageClass;
+        $product = $fs->getProduct($id);
+        if ($product) {
+            $response = $product->execute();
+            echo 'ok<script>window.close();</script>';
+        } else {
+            echo 'no open product';
+        }
+    }
 }
