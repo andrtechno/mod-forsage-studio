@@ -298,7 +298,49 @@ class DevController extends ConsoleController
             return ExitCode::OK;
         }
     }
-
+	
+    public function actionQueueSupplier($id, $quantity = 1)
+    {
+        $confirmMsg = '';
+        $confirmMsg .= "Starting confirm: says (yes|no)\r\n";
+        $queue = Yii::$app->queue;
+        $confirm = $this->confirm($confirmMsg, false);
+        if ($confirm) {
+            $products = $this->fs->getSupplierProductIds($id, ['quantity' => $quantity]);
+            if ($products) {
+                $rows = [];
+                foreach ($products as $product) {
+                    $job = new ProductByIdQueue(['id' => $product]);
+                    if (Yii::$app->db->driverName == 'pgsql') {
+                        $queue->push($job);
+                    } else {
+                        $rows[] = [
+                            'default',
+                            $queue->serializer->serialize($job),
+                            time(),
+                            120,
+                            1024
+                        ];
+                    }
+                }
+                Yii::$app->db->createCommand()->batchInsert($queue->tableName, [
+                    'channel',
+                    'job',
+                    'pushed_at',
+                    'ttr',
+                    'priority'
+                ], $rows)->execute();
+            }
+        } else {
+            echo "\r\n";
+            $this->stdout("--- Cancelled! ---\r\nYou can specify the paths using:");
+            echo "\r\n\r\n";
+            $this->stdout("    php cmd forsage/load/queue-all --interactive=1|0", Console::FG_BLUE);
+            echo "\r\n";
+            return ExitCode::OK;
+        }
+    }
+	
     public function actionImageMain($page = 0, $limit = 10000)
     {
         $offset = $limit * $page;

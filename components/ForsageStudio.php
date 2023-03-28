@@ -220,7 +220,7 @@ class ForsageStudio extends Component
             }
         } else {
             $model->brand_id = null;
-            if (isset($this->product['brand']) && $model->isNewRecord) {
+            if (isset($this->product['brand'])) {
                 if (isset($this->product['brand']['name'])) {
                     if ($this->product['brand']['name'] != 'No brand') {
                         $brand = Brand::findOne(['forsage_id' => $this->product['brand']['id']]);
@@ -680,7 +680,7 @@ class ForsageStudio extends Component
 
 
             if ($this->getChildCategory($product)) {
-                $result['type_id'] = $this->getTypeId($product);
+                $result['type_id'] = $this->getTypeId($product['category'], $product);
                 $result['categories'][1] = $this->getChildCategory($product);
 
                 //for optikon
@@ -711,13 +711,20 @@ class ForsageStudio extends Component
         return $result;
     }
 
-    public function getTypeId($product)
+    public function getTypeId($mainCategory, $category)
     {
-        if (isset($product['category'])) {
-            if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && Yii::$app->settings->get('forsage', 'clothes_type')) {
-                return Yii::$app->settings->get('forsage', 'clothes_type');
-            } elseif ($product['category']['id'] == self::CATEGORY_BOOTS && Yii::$app->settings->get('forsage', 'boots_type')) {
-                return Yii::$app->settings->get('forsage', 'boots_type');
+
+        if (isset($mainCategory, $category)) {
+            if ($mainCategory['id'] == self::CATEGORY_CLOTHES_ACCESSORIES) {
+                if (in_array($category['id'], $this->categories_clothes) && $this->settings->clothes_type) { //Одежда
+                    return $this->settings->clothes_type;
+                } elseif (in_array($category['id'], $this->categories_bags) && $this->settings->bags_type) { //сумки
+                    return $this->settings->bags_type;
+                } else {
+                    return $this->settings->accessories_type;
+                }
+            } elseif ($mainCategory['id'] == self::CATEGORY_BOOTS && $this->settings->boots_type) {
+                return $this->settings->boots_type;
             }
         }
         return false;
