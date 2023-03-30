@@ -66,8 +66,8 @@ class LoadController extends ConsoleController
             $p->delete();
         }
         $product = $this->fs->getProduct($id);
-        print_r($product->product);die;
-        print_r($product->getProductProps($product->product));die;
+        //print_r($product->product);die;
+        //print_r($product->getProductProps($product->product));die;
         if ($product) {
             $response = $product->execute();
         } else {
@@ -107,65 +107,6 @@ class LoadController extends ConsoleController
         }
     }
 
-    public function actionChanges2($start = 3600, $end = 0)
-    {
-        $start = eval('return ' . $start . ';');
-        $end = eval('return ' . $end . ';');
-        //for CRON
-        $end_date = time() - $end;
-        $start_date = time() - $start;
-
-        //products = "full" or "changes"
-        $this->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
-        $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
-        $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
-
-        $response = $this->fs->getChanges2($start_date, $end_date);
-
-        if ($response) {
-            $count = count($response['product_ids']);
-            $i = 0;
-
-            Console::startProgress($i, $count, ' - ', 100);
-            foreach ($response['product_ids'] as $index => $product) {
-                $product2 = $this->fs->getProduct($product);
-                if ($product2) {
-                    $product2->execute();
-                }
-                $i++;
-                Console::updateProgress($i, $count, $product . ' - ');
-
-            }
-            Console::endProgress(false);
-        }
-    }
-
-    public function actionChangesQueue($start = 3600, $end = 0)
-    {
-        $start = eval('return ' . $start . ';');
-        $end = eval('return ' . $end . ';');
-        //for CRON
-        $end_date = time() - $end;
-        $start_date = time() - $start;
-
-        //products = "full" or "changes"
-        $this->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
-        $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
-        $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
-
-        $response = $this->fs->getChanges2($start_date, $end_date);
-
-        if ($response) {
-            $i = 0;
-            foreach ($response['product_ids'] as $index => $product) {
-                Yii::$app->queue->push(new ProductByIdQueue([
-                    'id' => $product,
-                ]));
-
-            }
-
-        }
-    }
 
     /**
      * Изменение товаров (forsage/load/changes-supplier <SUPPLIER_ID> <START> <END> --interactive=1|0)
@@ -260,32 +201,6 @@ class LoadController extends ConsoleController
         } else {
             echo 'response empty';
         }
-    }
-
-    /**
-     * Получить все товары поставщика forsage/load/supplier-products 123
-     * @param $id
-     */
-    public function actionSupplierProducts($id)
-    {
-        $response = $this->fs->getSupplierProductIds($id, ['quantity' => 1]);
-
-        if ($response) {
-
-            $count = count($response);
-            $i = 0;
-            Console::startProgress($i, $count, ' - ', 100);
-            foreach ($response as $index => $item) {
-                $product = $this->fs->getProduct($item);
-                self::log('get product');
-                $product->execute();
-                self::log('end product');
-                $i++;
-                Console::updateProgress($i, $count, ' - ');
-            }
-            Console::endProgress(false);
-        }
-
     }
 
 

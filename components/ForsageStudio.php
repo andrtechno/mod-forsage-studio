@@ -815,7 +815,6 @@ class ForsageStudio extends Component
             if ($response['success'] == 'true') {
                 return $response['product_ids'];
             } else {
-                print_r($response);
                 self::log($supplier_id . " - " . $response['message']);
             }
         } else {

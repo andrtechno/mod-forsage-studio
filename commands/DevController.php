@@ -298,7 +298,7 @@ class DevController extends ConsoleController
             return ExitCode::OK;
         }
     }
-	
+
     public function actionQueueSupplier($id, $quantity = 1)
     {
         $confirmMsg = '';
@@ -340,7 +340,71 @@ class DevController extends ConsoleController
             return ExitCode::OK;
         }
     }
-	
+    public function actionQueueChanges($start = 3600, $end = 0)
+    {
+        $start = eval('return ' . $start . ';');
+        $end = eval('return ' . $end . ';');
+        //for CRON
+        $end_date = time() - $end;
+        $start_date = time() - $start;
+
+        //products = "full" or "changes"
+        $this->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
+
+        $response = $this->fs->getChanges2($start_date, $end_date);
+
+        if ($response) {
+            $i = 0;
+            foreach ($response['product_ids'] as $index => $product) {
+                Yii::$app->queue->push(new ProductByIdQueue([
+                    'id' => $product,
+                ]));
+            }
+        }
+    }
+    public function actionQueueProducts($start = 3600, $end = 0)
+    {
+        $start = eval('return ' . $start . ';');
+        $end = eval('return ' . $end . ';');
+        $end_date = time() - $end;
+        $start_date = time() - $start;
+
+        $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
+
+        $response = $this->fs->getProducts($start_date, $end_date, ['with_descriptions' => 0]);
+        $queue = Yii::$app->queue;
+        if ($response) {
+            $rows = [];
+            foreach ($response as $index => $item) {
+                $job = new ProductByIdQueue(['id' => $item['id']]);
+                if (Yii::$app->db->driverName == 'pgsql') {
+                    $queue->push($job);
+                } else {
+                    $rows[] = [
+                        'default',
+                        $queue->serializer->serialize($job),
+                        time(),
+                        120,
+                        1024
+                    ];
+                }
+            }
+            Yii::$app->db->createCommand()->batchInsert($queue->tableName, [
+                'channel',
+                'job',
+                'pushed_at',
+                'ttr',
+                'priority'
+            ], $rows)->execute();
+        } else {
+            echo 'response empty';
+        }
+    }
+
     public function actionImageMain($page = 0, $limit = 10000)
     {
         $offset = $limit * $page;
