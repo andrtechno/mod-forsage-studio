@@ -918,11 +918,8 @@ class ForsageStudio extends Component
         if (isset($response)) {
             if ($response['success'] == 'true') {
                 return $response['suppliers'];
-            } else {
-                self::log($response['message']);
             }
         }
-        self::log('Method getSuppliers Error success');
         return false;
     }
 
@@ -935,8 +932,6 @@ class ForsageStudio extends Component
      */
     public function getChanges($start = 3600, $end = 0)
     {
-
-
         $hour = 3600;
         $day = 86400;
         //for CRON
@@ -1013,8 +1008,8 @@ class ForsageStudio extends Component
             // ->setFormat(Client::FORMAT_JSON)
             ->setMethod('GET')
             ->setOptions([
-                //'sslVerifyPeer' => false,
-                //'timeout' => 8888
+                'sslVerifyPeer' => false,
+                'timeout' => 10000
             ])
             ->setData($params)
             ->send();
@@ -1024,11 +1019,6 @@ class ForsageStudio extends Component
         } else {
             return Json::decode($response->content);
         }
-    }
-
-    private function setMessage($message_code)
-    {
-        return \Yii::$app->name . ': ' . iconv('UTF-8', 'windows-1251', Yii::t('exchange1c/default', $message_code));
     }
 
     protected static function log($msg)

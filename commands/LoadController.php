@@ -56,12 +56,12 @@ class LoadController extends ConsoleController
     /**
      * Информация о товаре: "forsage/load/product <id>"
      * @param $id
-     * @param $delete Delete before product
+     * @param $before_delete Delete before product
      * @return bool
      */
-    public function actionProduct($id, $delete = 0)
+    public function actionProduct($id, $before_delete = 0)
     {
-        if ($delete) {
+        if ($before_delete) {
             $p = Product::findOne(['forsage_id' => $id]);
             $p->delete();
         }
@@ -75,134 +75,6 @@ class LoadController extends ConsoleController
         }
         return $response;
     }
-
-    /**
-     * Изменение товаров
-     * @param int $diff Example milliseconds "86400" (Default 3600 hour)
-     */
-    public function actionChanges($diff = 3600)
-    {
-        $diff = eval('return ' . $diff . ';');
-        $response = $this->fs->getChanges($diff);
-
-        if ($response) {
-            $count = count($response['product_ids']);
-            $i = 0;
-
-            Console::startProgress($i, $count, ' - ', 100);
-            foreach ($response['products'] as $index => $product) {
-                $this->fs->product = $product;
-                //print_r($this->fs);die;
-                $result = $this->fs->execute();
-                //print_r($result);
-                /*$product = $this->fs->getProduct($product);
-                if($product){
-                    $product->execute();
-                }*/
-                $i++;
-                Console::updateProgress($i, $count, ' - ');
-
-            }
-            Console::endProgress(false);
-        }
-    }
-
-
-    /**
-     * Изменение товаров (forsage/load/changes-supplier <SUPPLIER_ID> <START> <END> --interactive=1|0)
-     *
-     * @param int $supplier Forsage supplier id
-     * @param int $start Example milliseconds "86400 or 3600*2" (Default 3600)
-     * @param int $end Example milliseconds "86400 or 3600*2" (Default 0) Furmula ($end - $start)
-     */
-    public function actionChangesSupplier($supplier, $start = 3600, $end = 0)
-    {
-        $start = eval('return ' . $start . ';');
-        $end = eval('return ' . $end . ';');
-        $end_date = time() + $end;
-        $start_date = time() - $start;
-
-        //$this->stdout('Current date: ' . date('Y-m-d H:i:s', time()).PHP_EOL, Console::FG_BLUE);
-        //$this->stdout('Start date: ' . date('Y-m-d H:i:s', $start_date).PHP_EOL, Console::FG_PURPLE);
-        //$this->stdout('End date: ' . date('Y-m-d H:i:s', $end_date).PHP_EOL, Console::FG_PURPLE);
-
-        $table = new Table();
-
-
-        echo $table //->setHeaders(['Current date', 'Start date', 'End date'])
-        ->setRows([
-            ['Current date', date('Y-m-d H:i:s', time())],
-            ['Start date', date('Y-m-d H:i:s', $start_date)],
-            ['End date', date('Y-m-d H:i:s', $end_date)],
-        ])
-            ->run();
-
-        $confirmMsg = '';
-        $confirmMsg .= "Starting confirm: says (yes|no)\r\n";
-
-        // confirm
-        $confirm = $this->confirm($confirmMsg, false);
-
-
-        if ($confirm) {
-            $response = $this->fs->getChanges($start, $end);
-            if ($response) {
-                $count = Product::find()->where(['forsage_id' => $response['product_ids']])->count();
-                $i = 0;
-
-                Console::startProgress($i, $count, ' - ', 100);
-                foreach ($response['products'] as $index => $item) {
-                    if ($item['supplier']['id'] == $supplier) {
-                        $this->fs->product = $item;
-                        $result = $this->fs->execute();
-                        $i++;
-                        Console::updateProgress($i, $count, $item['vcode'] . ' - ');
-                    }
-                }
-                Console::endProgress(false);
-            }
-        } else {
-            echo "\r\n";
-            $this->stdout("--- Cancelled! ---\r\nYou can specify the paths using:");
-            echo "\r\n\r\n";
-            $this->stdout("    php cmd forsage/load/<action> <supplier_id> --interactive=1|0", Console::FG_BLUE);
-            echo "\r\n";
-
-            return ExitCode::OK;
-        }
-
-    }
-
-
-    public function actionProducts($start = 3600, $end = 0)
-    {
-        $start = eval('return ' . $start . ';');
-        $end = eval('return ' . $end . ';');
-        $end_date = time() - $end;
-        $start_date = time() - $start;
-
-        $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
-        $this->stdout('end: ' . date('Y-m-d H:i:s', $end_date) . PHP_EOL, Console::FG_GREEN);
-        $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
-
-        $response = $this->fs->getProducts($start, $end);
-
-        if ($response) {
-            $i = 0;
-            $count = count($response);
-            Console::startProgress($i, $count, ' - ', 100);
-            foreach ($response as $index => $item) {
-                $this->fs->product = $item;
-                $execute = $this->fs->execute();
-                $i++;
-                Console::updateProgress($i, $count, $item['id'] . ' - ');
-            }
-            Console::endProgress(false);
-        } else {
-            echo 'response empty';
-        }
-    }
-
 
     public static function log($mssage)
     {
@@ -268,55 +140,5 @@ class LoadController extends ConsoleController
 
         }
     }
-
-
-    public function actionQueueAll($quantity = 1)
-    {
-        $confirmMsg = '';
-        $confirmMsg .= "Starting confirm: says (yes|no)\r\n";
-        $confirm = $this->confirm($confirmMsg, false);
-        if ($confirm) {
-            $suppliers = $this->fs->getSuppliers();
-            if (!$suppliers) {
-                echo 'ERROR!';
-            }
-            foreach ($suppliers as $supplier) {
-                $i = 0;
-                $rows = [];
-                $products = $this->fs->getSupplierProductIds($supplier['id'], ['quantity' => $quantity]);
-                $count = count($products);
-                foreach ($products as $product) {
-                    $job = new ProductByIdQueue;
-                    $job->id = $product;
-                    $rows[] = [
-                        'default',
-                        serialize($job),
-                        time(),
-                        120,
-                        1024
-                    ];
-                    $i++;
-                }
-                Yii::$app->db->createCommand()->batchInsert(Yii::$app->queue->tableName, [
-                    'channel',
-                    'job',
-                    'pushed_at',
-                    'ttr',
-                    'priority'
-                ], $rows)->execute();
-            }
-
-        } else {
-            echo "\r\n";
-            $this->stdout("--- Cancelled! ---\r\nYou can specify the paths using:");
-            echo "\r\n\r\n";
-            $this->stdout("    php cmd forsage/load/queue-all --interactive=1|0", Console::FG_BLUE);
-            echo "\r\n";
-
-            return ExitCode::OK;
-        }
-
-    }
-
 
 }
