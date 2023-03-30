@@ -17,6 +17,13 @@ echo \panix\engine\grid\GridView::widget([
         [
             'attribute' => 'name'
         ],
+        [
+            'header' => Yii::t('shop/admin', 'PRODUCT_COUNT'),
+            'contentOptions' => ['class' => 'text-center'],
+            'value' => function ($model) {
+                return $model->productsCount;
+            }
+        ],
         'DEFAULT_CONTROL' => [
             'class' => 'panix\engine\grid\columns\ActionColumn',
             'template' => '{reload}',
