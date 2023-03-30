@@ -83,15 +83,6 @@ to the require section of your `composer.json` file.
 ]
 ```
 
-#### Mobule props
-| Props           | Default     | Description                                       |
-|-----------------|:-----------:|---------------------------------------------------|
-| apiKey(old)          |    ""       | Apikey                                            |
-| unit            |    1        | Еденица измерение штука/ящик и.тд                 |
-| type_id         |    1        | ID Типа товара                                    |
-| outStockDelete(old)  |    true     | Удалять товар с Базы-данных если **нет в наличии**    |
-
-
 #### Migrate
 ```
 php cmd migrate --migrationPath=vendor/panix/mod-forsage-studio/migrations

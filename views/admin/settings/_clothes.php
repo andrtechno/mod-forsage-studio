@@ -4,7 +4,7 @@
 
 <?php echo $form->field($model, 'clothes_type')->dropdownList($types, ['prompt' => '---'])->hint($model::t('TYPE_HINT')); ?>
 <div class="form-group row required">
-    <label class="col-sm-2 col-form-label" for="settingsform-1">cloths</label>
+    <label class="col-sm-2 col-form-label" for="settingsform-1"><?= $model::t('TAB_CHOTLES'); ?></label>
     <div class="col-sm-10">
 
         <?php
