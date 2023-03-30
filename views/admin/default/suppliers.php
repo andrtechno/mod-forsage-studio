@@ -22,12 +22,12 @@ echo \panix\engine\grid\GridView::widget([
             'template' => '{reload}',
             'buttons' => [
                 'reload' => function ($url, $model) {
-
-                    return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model->forsage_id],['title'=>'Reload products','class'=>'btn btn-sm btn-outline-primary','data-pjax'=>0]);
+                    if ($model->forsage_id) {
+                        return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model->forsage_id], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
+                    }
                 }
             ]
         ],
-
     ]
 
 ]);

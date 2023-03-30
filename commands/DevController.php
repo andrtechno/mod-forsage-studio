@@ -322,7 +322,7 @@ class DevController extends ConsoleController
         $this->stdout('start: ' . date('Y-m-d H:i:s', $start_date) . PHP_EOL, Console::FG_GREEN);
         $this->stdout('Loading...' . PHP_EOL, Console::FG_GREEN);
 
-        $response = $this->fs->getChanges2($start_date, $end_date);
+        $response = $this->fs->getChanges($start_date, $end_date);
 
         if ($response) {
             $i = 0;
