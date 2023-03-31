@@ -29,7 +29,7 @@ class ForsageStudio extends Component
      */
     protected $data;
     protected $rootCategory = null;
-    private $subCategoryPattern = '/\\/((?:[^\\\\\/]|\\\\.)*)/';
+    public $subCategoryPattern = '/\\/((?:[^\\\\\/]|\\\\.)*)/';
     private $_eav = [];
     protected $categoriesPathCache = [],
         $productTypeCache = [],
@@ -290,14 +290,14 @@ class ForsageStudio extends Component
 
 
         //set image
-        /*if (isset($props['images'])) {
+        if (isset($props['images'])) {
             foreach ($model->getImages()->all() as $im) {
                 $im->delete();
             }
             foreach ($props['images'] as $file) {
                 $model->attachImage($file);
             }
-        }*/
+        }
 
 
         if (Yii::$app->has('elasticsearch')) {

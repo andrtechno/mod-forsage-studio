@@ -1,9 +1,9 @@
 <?php
 
-use panix\engine\widgets\Pjax;
+use yii\widgets\Pjax;
 use panix\engine\Html;
 
-Pjax::begin(['dataProvider' => $dataProvider]);
+Pjax::begin();
 
 echo \panix\engine\grid\GridView::widget([
     'tableOptions' => ['class' => 'table table-striped'],
@@ -15,13 +15,18 @@ echo \panix\engine\grid\GridView::widget([
     'rowOptions' => ['class' => 'sortable-column'],
     'columns' => [
         [
-            'attribute' => 'name'
+            'attribute' => 'company'
         ],
         [
             'header' => Yii::t('shop/admin', 'PRODUCT_COUNT'),
             'contentOptions' => ['class' => 'text-center'],
+            'format' => 'raw',
             'value' => function ($model) {
-                return $model->productsCount;
+                $supplier = \panix\mod\shop\models\Supplier::findOne(['forsage_id' => $model['id']]);
+                if ($supplier) {
+                    return Html::a($supplier->productsCount, ['/admin/shop/product', 'ProductSearch[supplier_id]' => $supplier->id]);
+                }
+                //return $model->productsCount;
             }
         ],
         'DEFAULT_CONTROL' => [
@@ -29,8 +34,12 @@ echo \panix\engine\grid\GridView::widget([
             'template' => '{reload}',
             'buttons' => [
                 'reload' => function ($url, $model) {
-                    if ($model->forsage_id) {
-                        return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model->forsage_id], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
+                    //if ($model->forsage_id) {
+                    //    return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model->forsage_id], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
+                    //}
+
+                    if ($model['id']) {
+                        return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model['id']], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
                     }
                 }
             ]

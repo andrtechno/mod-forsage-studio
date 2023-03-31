@@ -11,24 +11,7 @@ use yii\web\View;
  * @var \panix\mod\forsage\models\SettingsForm $model
  */
 
-
-$forsageClass = Yii::$app->getModule('forsage')->forsageClass;
-$fs = new $forsageClass;
-
-?>
-
-
-<?php
-
 $form = ActiveForm::begin(['id' => 'forsage-form']);
-//560406
-//811645 обвусь унисекс
-//790624 обувь.украина
-//784824 чемодан
-$product = $fs->getProduct(784824);
-//$test = $product->execute();
-//\panix\engine\CMS::dump($product->product);
-//\panix\engine\CMS::dump($fs->getProductProps($product->product));
 $types = ArrayHelper::map(ProductType::find()->all(), 'id', 'name');
 $categories = $model->getCategories(0, 9);
 ?>
@@ -75,18 +58,6 @@ $categories = $model->getCategories(0, 9);
         </div>
         <div class="card-footer text-center">
             <?= $model->submitButton(); ?>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h5>Guides</h5>
-        </div>
-        <div class="card-body p-3">
-            <?php
-            $content = file_get_contents(Yii::getAlias('@forsage') . DIRECTORY_SEPARATOR . 'guide.md');
-            echo \yii\helpers\Markdown::process($content, 'gfm');
-            ?>
         </div>
     </div>
 

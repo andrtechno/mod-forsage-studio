@@ -2,13 +2,13 @@
 
 namespace panix\mod\forsage\controllers\admin;
 
-use app\modules\shop\models\Supplier;
 use panix\engine\CMS;
 use panix\mod\banner\models\BannerSearch;
 use panix\mod\forsage\components\ForsageStudio;
 use panix\mod\forsage\components\ProductByIdQueue;
 use panix\mod\forsage\components\ProductIdQueue;
 use panix\mod\shop\models\search\SupplierSearch;
+use panix\mod\shop\models\Supplier;
 use Yii;
 use panix\engine\controllers\AdminController;
 use panix\mod\forsage\models\SettingsForm;
@@ -45,9 +45,21 @@ class DefaultController extends AdminController
         $searchModel = new SupplierSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams());
 
+        $suppliers = $this->fs->getSuppliers();
+
+        $dataProvider = new ArrayDataProvider([
+            'allModels' => $suppliers,
+            'sort' => [
+                'attributes' => ['id', 'company', 'email'],
+            ],
+            'pagination' => [
+                'pageSize' => 50,
+            ],
+        ]);
+        //print_r($dataProvider);die;
         return $this->render('suppliers', [
             'dataProvider' => $dataProvider,
-            'searchModel' => $searchModel
+           // 'searchModel' => $searchModel
         ]);
     }
 
