@@ -15,5 +15,6 @@ return [
     'TAB_SHOES' => 'Обувь',
     'BRAND' => 'Бренд является поставщиком?',
     'STRUCTURE_SHOES' => 'Структура обуви',
-    'STRUCTURE_CLOTHES' => 'Структура одежды'
+    'STRUCTURE_CLOTHES' => 'Структура одежды',
+    'STRUCTURE_BAGS' => 'Структура сумок'
 ];

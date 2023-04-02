@@ -15,5 +15,6 @@ return [
     'TAB_SHOES' => 'Shoes',
     'BRAND' => 'Is the brand a supplier?',
     'STRUCTURE_SHOES' => 'Shoe structure',
-    'STRUCTURE_CLOTHES' => 'Structure of the clothes'
+    'STRUCTURE_CLOTHES' => 'Structure of the clothes',
+    'STRUCTURE_BAGS' => 'Structure of the bags'
 ];

@@ -248,7 +248,7 @@ class ForsageStudio extends Component
             $this->processCategories($model, $model->main_category_id);
         }
         if (isset($props['attributes'])) {
-            if (isset($props['attributes'][6]['value'])) { // && $model->type_id == self::TYPE_BOOTS
+            /*if (isset($props['attributes'][6]['value'])) { // && $model->type_id == self::TYPE_BOOTS
                 if (preg_match('/^(\d+)\-(\d+)$/', $props['attributes'][6]['value'], $match)) { // check 11-22
                     $explode = explode('-', $props['attributes'][6]['value']);
 
@@ -284,7 +284,7 @@ class ForsageStudio extends Component
                     ];
                 }
 
-            }
+            }*/
             $this->attributeData($model, $props['attributes']);
         }
 
