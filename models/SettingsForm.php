@@ -22,13 +22,15 @@ class SettingsForm extends SettingsModel
     public $categories_bags;
     public $accessories_type;
     public $brand;
+    public $structure_shoes;
+    public $structure_clothes;
 
     public function rules()
     {
         return [
             [['hook_key', 'apikey', 'brand'], "required"],
             //[['product_related_bilateral', 'group_attribute', 'smart_bc', 'smart_title'], 'boolean'],
-            [['boots_type', 'clothes_type', 'bags_type', 'accessories_type'], 'integer'],
+            [['boots_type', 'clothes_type', 'bags_type', 'accessories_type', 'structure_shoes', 'structure_clothes'], 'integer'],
             [['boots_type', 'clothes_type', 'bags_type', 'accessories_type'], 'default'],
             [['apikey', 'hook_key', 'categories_clothes', 'categories_bags'], 'string'],
             [['out_stock_delete', 'brand'], 'boolean'],
@@ -44,6 +46,8 @@ class SettingsForm extends SettingsModel
     public static function defaultSettings()
     {
         return [
+            'structure_shoes' => 0,
+            'structure_clothes' => 0,
             'out_stock_delete' => true,
             'apikey' => '',
             'hook_key' => CMS::gen(50),

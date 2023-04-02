@@ -32,6 +32,12 @@ $categories = $model->getCategories(0, 9);
                 'options' => ['class' => 'flex-sm-fill text-center nav-item'],
             ];
             $tabs[] = [
+                'label' => $model::t('TAB_SHOES'),
+                'content' => $this->render('_shoes', ['form' => $form, 'model' => $model, 'types' => $types]),
+                'headerOptions' => [],
+                'options' => ['class' => 'flex-sm-fill text-center nav-item'],
+            ];
+            $tabs[] = [
                 'label' => $model::t('TAB_CHOTLES'),
                 'content' => $this->render('_clothes', ['form' => $form, 'model' => $model, 'types' => $types, 'categories' => $categories]),
                 'headerOptions' => [],

@@ -42,8 +42,8 @@ class DefaultController extends AdminController
             $this->pageName
         ];
 
-        $searchModel = new SupplierSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams());
+        //$searchModel = new SupplierSearch();
+        //$dataProvider = $searchModel->search(Yii::$app->request->getQueryParams());
 
         $suppliers = $this->fs->getSuppliers();
 
@@ -56,7 +56,7 @@ class DefaultController extends AdminController
                 'pageSize' => 50,
             ],
         ]);
-        //print_r($dataProvider);die;
+
         return $this->render('suppliers', [
             'dataProvider' => $dataProvider,
            // 'searchModel' => $searchModel

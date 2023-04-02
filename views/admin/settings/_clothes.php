@@ -1,7 +1,14 @@
 <div class="form-group">
     <div class="alert alert-info"><?= Yii::t('forsage/default','CATEGORIES_HIT'); ?></div>
 </div>
-
+<?php echo $form->field($model, 'structure_clothes')->radioList([
+    0=>html_entity_decode('Clothes'),
+    //1=>html_entity_decode('Clothes &rarr; [Man,Woman,Kids] -- Нужно протестить с разными товарами'),
+    //2=>html_entity_decode('Clothes &rarr; [Man,Woman,Kids] &rarr; [Category] -- Нужно протестить с разными товарами'),
+    3=>html_entity_decode('Clothes &rarr; [Category]'),
+    //4=>html_entity_decode('[Man,Woman,Kids] ??'),
+    //5=>html_entity_decode('[Man,Woman,Kids] &rarr; [Category] ??')
+]); ?>
 <?php echo $form->field($model, 'clothes_type')->dropdownList($types, ['prompt' => '---'])->hint($model::t('TYPE_HINT')); ?>
 <div class="form-group row required">
     <label class="col-sm-2 col-form-label" for="settingsform-1"><?= $model::t('TAB_CHOTLES'); ?></label>

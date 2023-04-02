@@ -12,5 +12,8 @@ return [
     'TAB_MAIN' => 'Основні',
     'TAB_BAGS' => 'Сумки',
     'TAB_CHOTLES' => 'Одяг',
-    'BRAND' => 'Бренд є постачальником?'
+    'TAB_SHOES' => 'Взуття',
+    'BRAND' => 'Бренд є постачальником?',
+    'STRUCTURE_SHOES' => 'Структура взуття',
+    'STRUCTURE_CLOTHES' => 'Структура одягу'
 ];

@@ -99,9 +99,9 @@ class ForsageStudio extends Component
             $model = new Product();
             $model->type_id = $props['type_id'];
             $model->forsage_id = $this->product['id'];
-            $model->sku = $this->product['vcode'];
             $model->created_at = $this->product['photosession_date'];
         }
+        $model->sku = $this->product['vcode'];
         //$categoryName = $this->generateCategory($this->product);
         $model->name_ru = $this->generateProductName(0);
         $model->name_uk = $this->generateProductName(1);
@@ -329,10 +329,11 @@ class ForsageStudio extends Component
                 }
             }*/
 
-            $options['categories'][] = $model->main_category_id;
+            //$options['categories'][] = $model->main_category_id;
             foreach ($model->categorization as $category) {
                 $options['categories'][] = $category->category;
             }
+
             $options['categories'] = array_unique($options['categories']);
             $result = Yii::$app->elasticsearch->post('product/_doc/' . $model->id, [], Json::encode($options));
 
