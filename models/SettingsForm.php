@@ -20,6 +20,7 @@ class SettingsForm extends SettingsModel
     public $bags_type;
     public $categories_clothes;
     public $categories_bags;
+    public $categories_shoes;
     public $accessories_type;
     public $brand;
     public $structure_shoes;
@@ -32,8 +33,8 @@ class SettingsForm extends SettingsModel
             [['hook_key', 'apikey', 'brand'], "required"],
             //[['product_related_bilateral', 'group_attribute', 'smart_bc', 'smart_title'], 'boolean'],
             [['boots_type', 'clothes_type', 'bags_type', 'accessories_type', 'structure_shoes', 'structure_clothes', 'structure_bags'], 'integer'],
-            [['boots_type', 'clothes_type', 'bags_type', 'accessories_type'], 'default'],
-            [['apikey', 'hook_key', 'categories_clothes', 'categories_bags'], 'string'],
+            [['boots_type', 'clothes_type', 'bags_type', 'accessories_type', 'categories_shoes'], 'default'],
+            [['apikey', 'hook_key', 'categories_clothes', 'categories_bags', 'categories_shoes'], 'string'],
             [['out_stock_delete', 'brand'], 'boolean'],
             ['apikey', 'match', 'pattern' => "/^[a-zA-Z0-9\._\-]+$/u"],
             ['hook_key', 'match', 'pattern' => "/^[a-zA-Z0-9]+$/u", 'message' => 'Только буквы и цифры'],

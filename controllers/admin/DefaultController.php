@@ -76,7 +76,7 @@ class DefaultController extends AdminController
 
             ]));
             foreach ($products as $product) {
-                $job = new ProductByIdQueue(['id' => $product]);
+                $job = new ProductByIdQueue(['id' => $product,'images'=>true,'attributes'=>true]);
                 if (Yii::$app->db->driverName == 'pgsql') {
                     $queue->push($job);
                 } else {

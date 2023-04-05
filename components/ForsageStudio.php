@@ -64,30 +64,36 @@ class ForsageStudio extends Component
         parent::__construct($config);
     }
 
-    public function execute()
+    /**
+     * @param bool $reloadImages
+     * @param bool $reloadAttributes
+     * @return bool
+     * @throws \Throwable
+     * @throws \yii\db\StaleObjectException
+     */
+    public function execute($reloadImages = true, $reloadAttributes = true)
     {
-
         $this->_eav = []; //clear eav for elastic
 
         $props = $this->getProductProps($this->product);
 //print_r($props);die;
         //$errors = (isset($props['error'])) ? true : false;
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
+
+
+        if ($model) {
+            if ($this->product['quantity'] == 0) {
+                if (Yii::$app->settings->get('forsage', 'out_stock_delete')) {
+                    self::log('Product delete ' . $this->product['id']);
+                    $model->delete();
+                    return true;
+                }
+            }
+        }
         if (!$model && $this->product['quantity'] == 0) {
             return false;
         }
-
-        if (!$this->product['quantity']) {
-            if ($model) {
-                if (Yii::$app->settings->get('forsage', 'out_stock_delete')) {
-                    //self::log('Product delete ' . $this->product['id']);
-                    //$model->delete();
-                }
-
-            }
-            // return false;
-        }
-        self::log('Product quantity ' . $this->product['id'] . ' - ' . $this->product['quantity']);
+        //self::log('Product quantity ' . $this->product['id'] . ' - ' . $this->product['quantity']);
 
 
         if (!$props['success']) {
@@ -248,8 +254,8 @@ class ForsageStudio extends Component
             $this->processCategories($model, $model->main_category_id);
         }
         if (isset($props['attributes'])) {
-            /*if (isset($props['attributes'][6]['value'])) { // && $model->type_id == self::TYPE_BOOTS
-                if (preg_match('/^(\d+)\-(\d+)$/', $props['attributes'][6]['value'], $match)) { // check 11-22
+            if (isset($props['attributes'][6]['value'])) { // && $model->type_id == self::TYPE_BOOTS
+                /*if (preg_match('/^(\d+)\-(\d+)$/', $props['attributes'][6]['value'], $match)) { // check 11-22
                     $explode = explode('-', $props['attributes'][6]['value']);
 
                     $size_min = (int)$explode[0];
@@ -282,20 +288,31 @@ class ForsageStudio extends Component
                         'name' => 'Размер',
                         'value' => $props['attributes'][6]['value']
                     ];
-                }
+                }*/
+                /*if (preg_match('/^([a-zA-Z+])\-([a-zA-Z+])$/', $props['attributes'][6]['value'], $match)) { // check S-XL
+                    $props['attributes'][99998] = [
+                        'id' => 99998,
+                        'name' => 'Размер',
+                        'value' => $props['attributes'][6]['value']
+                    ];
+                }*/
 
-            }*/
-            $this->attributeData($model, $props['attributes']);
+            }
+            if($reloadAttributes) {
+                $this->attributeData($model, $props['attributes']);
+            }
         }
 
 
         //set image
-        if (isset($props['images'])) {
-            foreach ($model->getImages()->all() as $im) {
-                $im->delete();
-            }
-            foreach ($props['images'] as $file) {
-                $model->attachImage($file);
+        if($reloadImages) {
+            if (isset($props['images'])) {
+                foreach ($model->getImages()->all() as $im) {
+                    $im->delete();
+                }
+                foreach ($props['images'] as $file) {
+                    $model->attachImage($file);
+                }
             }
         }
 
@@ -817,7 +834,7 @@ class ForsageStudio extends Component
                 return $response['product_ids'];
             }
         }
-        self::log('Error: '.__FUNCTION__.'('.$supplier_id . ') - ' . $response['message']);
+        self::log('Error: ' . __FUNCTION__ . '(' . $supplier_id . ') - ' . $response['message']);
         return false;
     }
 
@@ -831,7 +848,7 @@ class ForsageStudio extends Component
                 return $response['categories'];
             }
         }
-        self::log('Error: '.__FUNCTION__.'('.$supplier_id . ') - ' . $response['message']);
+        self::log('Error: ' . __FUNCTION__ . '(' . $supplier_id . ') - ' . $response['message']);
         return false;
     }
 
@@ -850,7 +867,7 @@ class ForsageStudio extends Component
                 return $response['brands'];
             }
         }
-        self::log('Error: '.__FUNCTION__.' - ' . $response['message']);
+        self::log('Error: ' . __FUNCTION__ . ' - ' . $response['message']);
         return false;
     }
 
@@ -869,7 +886,7 @@ class ForsageStudio extends Component
                 return $response['characteristics'];
             }
         }
-        self::log('Error: '.__FUNCTION__.' - ' . $response['message']);
+        self::log('Error: ' . __FUNCTION__ . ' - ' . $response['message']);
         return false;
     }
 
@@ -892,7 +909,7 @@ class ForsageStudio extends Component
                 return $this;
             }
         }
-        self::log('Error: '.__FUNCTION__.'('.$product_id.')');
+        self::log('Error: ' . __FUNCTION__ . '(' . $product_id . ')');
         return false;
     }
 

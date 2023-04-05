@@ -8,9 +8,15 @@ use yii\base\BaseObject;
 use yii\helpers\Console;
 use yii\queue\JobInterface;
 
+/**
+ * Class ProductByIdQueue
+ * @package panix\mod\forsage\components
+ */
 class ProductByIdQueue extends BaseObject implements JobInterface
 {
     public $id;
+    public $images = true; //reload images
+    public $attributes = true; //reload attributes
 
     public function execute($queue)
     {
@@ -18,13 +24,13 @@ class ProductByIdQueue extends BaseObject implements JobInterface
         $fs = new $forsageClass;
         $product = $fs->getProduct($this->id);
         if ($product) {
-            if ($product->execute()) {
+            if ($product->execute($images, $attributes)) {
                 Yii::info('addProduct ' . $this->id, 'forsage');
             } else {
-                Yii::info('NotAddProduct  ' . $this->id, 'forsage');
+                Yii::info('NotAddProduct ' . $this->id, 'forsage');
             }
-        }else{
-            Yii::info('NoGetProduct  ' . $this->id, 'forsage');
+        } else {
+            Yii::info('NoGetProduct ' . $this->id, 'forsage');
         }
         return true;
     }

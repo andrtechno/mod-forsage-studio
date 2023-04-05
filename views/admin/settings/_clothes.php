@@ -1,6 +1,3 @@
-<div class="form-group">
-    <div class="alert alert-info"><?= Yii::t('forsage/default','CATEGORIES_HIT'); ?></div>
-</div>
 <?php echo $form->field($model, 'structure_clothes')->radioList([
     0=>html_entity_decode('Clothes'),
     //1=>html_entity_decode('Clothes &rarr; [Man,Woman,Kids] -- Нужно протестить с разными товарами'),
@@ -13,7 +10,7 @@
 <div class="form-group row required">
     <label class="col-sm-2 col-form-label" for="settingsform-1"><?= $model::t('TAB_CHOTLES'); ?></label>
     <div class="col-sm-10">
-
+        <div class="alert alert-info mb-3 ml-0 mr-0"><?= Yii::t('forsage/default','CATEGORIES_HIT'); ?></div>
         <?php
         echo \panix\ext\jstree\JsTree::widget([
             'id' => 'CategoriesClothes',

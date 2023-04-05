@@ -42,7 +42,12 @@ class DevController extends ConsoleController
      * @var ForsageStudio
      */
     private $fs;
+public function actionTest2($id){
+    $job = new ProductByIdQueue(['id' => $id,'images'=>false]);
 
+    Yii::$app->queue->push($job);
+
+}
     public function beforeAction($action)
     {
         if (!extension_loaded('intl')) {
@@ -60,6 +65,9 @@ class DevController extends ConsoleController
      */
     public function actionQueueReset()
     {
+        if (Yii::$app->has('elasticsearch')) {
+
+        }
         Yii::$app->db->createCommand()->update('{{%queue}}', ['done_at' => NULL, 'attempt' => NULL, 'reserved_at' => NULL], '')->execute();
     }
 
@@ -161,21 +169,29 @@ class DevController extends ConsoleController
             $db->createCommand()->truncateTable(ProductAttributesEav::tableName())->execute();
 
             $db->createCommand()->truncateTable(AttributeOption::tableName())->execute();
-            $db->createCommand()->truncateTable(Attribute::tableName())->execute();
-            $db->createCommand()->truncateTable(Category::tableName())->execute();*/
+            $db->createCommand()->truncateTable(Attribute::tableName())->execute();*/
+
+            $db->createCommand()->truncateTable(ProductCategoryRef::tableName())->execute();
+            $db->createCommand()->truncateTable(Category::tableName())->execute();
+
 
             if ($db->createCommand('SELECT * FROM ' . Product::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
-                $db->createCommand()->truncateTable(Product::tableName() . ' WHERE forsage_id IS NOT NULL')->execute();
+                $db->createCommand()->delete(Product::tableName(), ['not', ['forsage_id' => null]])->execute();
+                //$db->createCommand()->truncateTable(Product::tableName() . ' WHERE forsage_id IS NOT NULL')->execute();
             }
             if ($db->createCommand('SELECT * FROM ' . Brand::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
-                $db->createCommand()->truncateTable(Brand::tableName() . ' WHERE forsage_id IS NOT NULL')->execute();
+                //$db->createCommand()->truncateTable(Brand::tableName() . ' WHERE (forsage_id IS NOT NULL)')->execute();
+                $db->createCommand()->delete(Brand::tableName(), ['not', ['forsage_id' => null]])->execute();
             }
             if ($db->createCommand('SELECT * FROM ' . Supplier::tableName() . ' WHERE forsage_id IS NOT NULL')->query()->count()) {
-                $db->createCommand()->truncateTable(Supplier::tableName())->execute();
+                //$db->createCommand()->truncateTable(Supplier::tableName())->execute();
+                $db->createCommand()->delete(Supplier::tableName(), ['not', ['forsage_id' => null]])->execute();
             }
+            $db->createCommand()->truncateTable('{{%shop__type_attribute}}')->execute();
+            $db->createCommand()->truncateTable(ProductImage::tableName())->execute();
+            $db->createCommand()->truncateTable(AttributeOption::tableName())->execute();
 
-
-            /*$model = new Category;
+            $model = new Category;
             $model->name = 'Каталог продукции';
             $model->lft = 1;
             $model->rgt = 2;
@@ -184,7 +200,7 @@ class DevController extends ConsoleController
             $model->full_path = '';
             if ($model->validate()) {
                 $model->saveNode();
-            }*/
+            }
         } else {
             echo 'YII_DEBUG disabled!.';
         }
