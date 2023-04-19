@@ -16,5 +16,6 @@ return [
     'BRAND' => 'Бренд є постачальником?',
     'STRUCTURE_SHOES' => 'Структура взуття',
     'STRUCTURE_CLOTHES' => 'Структура одягу',
-    'STRUCTURE_BAGS' => 'Структура сумок'
+    'STRUCTURE_BAGS' => 'Структура сумок',
+    'STRUCTURE_ACCESSORIES' => 'Структура аксесуарів',
 ];

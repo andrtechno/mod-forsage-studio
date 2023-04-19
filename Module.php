@@ -12,11 +12,12 @@ class Module extends WebModule implements BootstrapInterface
 {
 
     public $icon = '';
-    public $unit = 1;
     public $onlySuppliers = [];
     public $forsageClass = '\panix\mod\forsage\components\ForsageStudio';
     public $excludeCategories = [];
-    //public $watermarkHost = null;
+    public $accessories_key = 'Accessories';
+    public $bags_key = 'Bags';
+    public $clothes_key = 'Clothes';
     public $sizeGroup = [
         '44-99' => '44 и более',
         '40-45' => '40-45',

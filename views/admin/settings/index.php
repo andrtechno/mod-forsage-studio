@@ -13,7 +13,7 @@ use yii\web\View;
 
 $form = ActiveForm::begin(['id' => 'forsage-form']);
 $types = ArrayHelper::map(ProductType::find()->all(), 'id', 'name');
-$categories = $model->getCategories(0, 9);
+$categories = $model->getCategories(9);
 ?>
 
 
@@ -89,8 +89,9 @@ $this->registerJs("
 
 $(document).on('beforeSubmit','#forsage-form',function (e) {
     var form = $(this);
-    var checked_ids = $('#CategoriesCloth').jstree('get_checked');
+    var checked_ids = $('#CategoriesClothes').jstree('get_checked');
     var checked_ids2 = $('#CategoriesBags').jstree('get_checked');
+    var checked_ids3 = $('#CategoriesShoes').jstree('get_checked');
     var inputName = 'SettingsForm[categories_clothes]';
     var input = $('input[name=\"'+inputName+'\"]');
     if(checked_ids.length){
@@ -98,6 +99,8 @@ $(document).on('beforeSubmit','#forsage-form',function (e) {
             form.prepend('<input type=\"hidden\" name=\"'+inputName+'\" value=\"'+checked_ids.join(',')+'\" />');
         }
         input.val(checked_ids.join(','));
+    }else{
+        form.prepend('<input type=\"hidden\" name=\"'+inputName+'\" value=\"\" />');
     }
     
     
@@ -108,9 +111,20 @@ $(document).on('beforeSubmit','#forsage-form',function (e) {
             form.prepend('<input type=\"hidden\" name=\"'+inputName2+'\" value=\"'+checked_ids2.join(',')+'\" />');
         }
         input2.val(checked_ids2.join(','));
+    }else{
+        form.prepend('<input type=\"hidden\" name=\"'+inputName2+'\" value=\"\" />');
     }
     
-    
+    var inputName3 = 'SettingsForm[categories_shoes]';
+    var input3 = $('input[name=\"'+inputName3+'\"]');
+    if(checked_ids3.length){
+        if(!input3.length){
+            form.prepend('<input type=\"hidden\" name=\"'+inputName3+'\" value=\"'+checked_ids3.join(',')+'\" />');
+        }
+        input3.val(checked_ids3.join(','));
+    }else{
+        form.prepend('<input type=\"hidden\" name=\"'+inputName3+'\" value=\"\" />');
+    }
     //return false;
 });
 
@@ -132,6 +146,7 @@ if (isset($_POST['categories_clothes']) && !empty($_POST['categories_clothes']))
 
     $this->registerJs("$('#CategoriesBags').checkNodes('{$model->categories_bags}');", View::POS_END, 'categories_bags');
     $this->registerJs("$('#CategoriesClothes').checkNodes('{$model->categories_clothes}');", View::POS_END, 'categories_clothes');
+    $this->registerJs("$('#CategoriesShoes').checkNodes('{$model->categories_shoes}');", View::POS_END, 'categories_shoes');
 
 }
 

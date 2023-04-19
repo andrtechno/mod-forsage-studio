@@ -1,5 +1,5 @@
 <?php
-$categories = $model->getCategories(0, 11);
+$categories = $model->getCategories(11);
 ?>
 <?php echo $form->field($model, 'structure_shoes')->radioList([
     0=>html_entity_decode('Shoes'),
@@ -12,9 +12,9 @@ $categories = $model->getCategories(0, 11);
 <?php echo $form->field($model, 'boots_type')->dropdownList($types, ['prompt' => '---'])->hint($model::t('TYPE_HINT')); ?>
 
 <div class="form-group row">
-    <label class="col-sm-2 col-form-label" for="settingsform-1"><?= $model::t('sssss'); ?></label>
+    <label class="col-sm-2 col-form-label" for="settingsform-1"><?= $model::t('TAB_SHOES'); ?></label>
     <div class="col-sm-10">
-        <div class="alert alert-info mb-3 ml-0 mr-0"><?= Yii::t('forsage/default','Исключить категории'); ?></div>
+        <div class="alert alert-danger mb-3 ml-0 mr-0"><?= Yii::t('forsage/default','Исключить категории, товары с этих категорий <strong>не будут</strong> добавлены.'); ?></div>
         <?php
         echo \panix\ext\jstree\JsTree::widget([
             'id' => 'CategoriesShoes',

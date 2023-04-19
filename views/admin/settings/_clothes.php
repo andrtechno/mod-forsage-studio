@@ -1,8 +1,8 @@
 <?php echo $form->field($model, 'structure_clothes')->radioList([
-    0=>html_entity_decode('Clothes'),
+    0=>Yii::$app->getModule('forsage')->clothes_key,
     //1=>html_entity_decode('Clothes &rarr; [Man,Woman,Kids] -- Нужно протестить с разными товарами'),
     //2=>html_entity_decode('Clothes &rarr; [Man,Woman,Kids] &rarr; [Category] -- Нужно протестить с разными товарами'),
-    3=>html_entity_decode('Clothes &rarr; [Category]'),
+    3=>html_entity_decode(Yii::$app->getModule('forsage')->clothes_key.' &rarr; [Category]'),
     //4=>html_entity_decode('[Man,Woman,Kids] ??'),
     //5=>html_entity_decode('[Man,Woman,Kids] &rarr; [Category] ??')
 ]); ?>

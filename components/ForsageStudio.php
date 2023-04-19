@@ -112,7 +112,6 @@ class ForsageStudio extends Component
         $model->name_ru = $this->generateProductName(0);
         $model->name_uk = $this->generateProductName(1);
         $model->slug = CMS::slug($model->name_uk);
-        $model->unit = Yii::$app->getModule('forsage')->unit;
 
         $model->switch = 1;
         $model->ukraine = (isset($props['ukraine'])) ? $props['ukraine'] : 0;
@@ -144,6 +143,12 @@ class ForsageStudio extends Component
         $model->quantity_min = (isset($props['in_box'])) ? $props['in_box']['value'] : 1;
         //$model->quantity_step = (isset($props['in_box'])) ? $props['in_box']['value'] : 1;
 
+
+        $model->unit = (isset($props['unit'])) ? $props['unit'] : 1;
+        //Если в я боксе 1, делаем еденице измерения 'штука'
+        if ($model->in_box == 1) {
+            $model->unit = 1;
+        }
 
 //print_r($this->product['quantity']);die;
         $model->quantity = 1;//$this->product['quantity'];
@@ -298,14 +303,14 @@ class ForsageStudio extends Component
                 }*/
 
             }
-            if($reloadAttributes) {
+            if ($reloadAttributes) {
                 $this->attributeData($model, $props['attributes']);
             }
         }
 
 
         //set image
-        if($reloadImages) {
+        if ($reloadImages) {
             if (isset($props['images'])) {
                 foreach ($model->getImages()->all() as $im) {
                     $im->delete();
@@ -754,6 +759,8 @@ class ForsageStudio extends Component
         if (isset($product['category'])) {
             if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && $this->settings->clothes_type) {
                 $flag = true;
+            } elseif ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES && $this->settings->accessories_type) {
+                $flag = true;
             } elseif ($product['category']['id'] == self::CATEGORY_BOOTS && $this->settings->boots_type) {
                 $flag = true;
             }
@@ -767,7 +774,7 @@ class ForsageStudio extends Component
     private function lastChildCategory($category)
     {
         if (!isset($category['child'])) {
-            if (isset($category['descriptions'])) {
+            if (isset($category['descriptions'][0],$category['descriptions'][1])) {
                 //ukraine lang
                 return [
                     'id' => $category['id'],
@@ -775,7 +782,11 @@ class ForsageStudio extends Component
                     'name_uk' => $category['descriptions'][1]['name']
                 ];
             } else {
-                return ['id' => $category['id'], 'name' => $category['name']];
+                return [
+                    'id' => $category['id'],
+                    'name_ru' => $category['name'],
+                    'name_uk' => $category['name']
+                ];
             }
         } else {
             return $this->lastChildCategory($category['child']);

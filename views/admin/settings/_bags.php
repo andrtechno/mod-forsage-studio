@@ -1,8 +1,8 @@
 <?php echo $form->field($model, 'structure_bags')->radioList([
-    0=>html_entity_decode('Bags'),
+    0=>Yii::$app->getModule('forsage')->bags_key,
     //1=>html_entity_decode('Bags &rarr; [Man,Woman,Kids] -- Нужно протестить с разными товарами'),
     //2=>html_entity_decode('Bags &rarr; [Man,Woman,Kids] &rarr; [Category] -- Нужно протестить с разными товарами'),
-    3=>html_entity_decode('Bags &rarr; [Category]'),
+    3=>html_entity_decode(Yii::$app->getModule('forsage')->bags_key.' &rarr; [Category]'),
 ]); ?>
 <?php echo $form->field($model, 'bags_type')->dropdownList($types, ['prompt' => '---'])->hint($model::t('TYPE_HINT')); ?>
 <div class="form-group row required">
