@@ -91,6 +91,7 @@ class ForsageStudio extends Component
             }
         }
         if (!$model && $this->product['quantity'] == 0) {
+            self::log('Product success false quantity ' . $this->product['quantity']);
             return false;
         }
         //self::log('Product quantity ' . $this->product['id'] . ' - ' . $this->product['quantity']);
@@ -312,17 +313,29 @@ class ForsageStudio extends Component
         //set image
         if ($reloadImages) {
             if (isset($props['images'])) {
+
+                $ftp = Yii::$app->getModule('shop')->ftpClient;
+                if($ftp){
+                    $ftp->connect(Yii::$app->getModule('shop')->ftp['server']);
+                    $ftp->login(Yii::$app->getModule('shop')->ftp['login'], Yii::$app->getModule('shop')->ftp['password']);
+                    $ftp->pasv(true);
+                }
+               // $model->setFtpClient($ftp);
                 foreach ($model->getImages()->all() as $im) {
                     $im->delete();
                 }
+
                 foreach ($props['images'] as $file) {
                     $model->attachImage($file);
+                }
+                if($ftp){
+                    $ftp->close();
                 }
             }
         }
 
 
-        if (Yii::$app->has('elasticsearch')) {
+        /*if (Yii::$app->has('elasticsearch')) {
             $options = [];
             $options['name'] = $model->name;
             // $optionse['name_ru'] = $this->name_ru;
@@ -352,14 +365,14 @@ class ForsageStudio extends Component
             }*/
 
             //$options['categories'][] = $model->main_category_id;
-            foreach ($model->categorization as $category) {
+            /*foreach ($model->categorization as $category) {
                 $options['categories'][] = $category->category;
             }
 
             $options['categories'] = array_unique($options['categories']);
             $result = Yii::$app->elasticsearch->post('product/_doc/' . $model->id, [], Json::encode($options));
 
-        }
+        }*/
 
         return true;
     }

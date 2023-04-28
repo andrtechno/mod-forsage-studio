@@ -24,7 +24,7 @@ class ProductByIdQueue extends BaseObject implements JobInterface
         $fs = new $forsageClass;
         $product = $fs->getProduct($this->id);
         if ($product) {
-            if ($product->execute($images, $attributes)) {
+            if ($product->execute($this->images, $this->attributes)) {
                 Yii::info('addProduct ' . $this->id, 'forsage');
             } else {
                 Yii::info('NotAddProduct ' . $this->id, 'forsage');

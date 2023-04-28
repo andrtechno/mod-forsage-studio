@@ -116,6 +116,7 @@ class SettingsController extends AdminController
         $product = $fs->getProduct($id);
         if ($product) {
             $response = $product->execute();
+            //var_dump($response);
             echo 'ok<script>window.close();</script>';
         } else {
             echo 'no open product';
