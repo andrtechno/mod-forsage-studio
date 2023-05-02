@@ -99,6 +99,9 @@ class ForsageStudio extends Component
 
         if (!$props['success']) {
             self::log('Product success false ' . $this->product['id']);
+            if ($model) {
+                $model->delete();
+            }
             return false;
         }
 
@@ -315,12 +318,12 @@ class ForsageStudio extends Component
             if (isset($props['images'])) {
 
                 $ftp = Yii::$app->getModule('shop')->ftpClient;
-                if($ftp){
+                if ($ftp) {
                     $ftp->connect(Yii::$app->getModule('shop')->ftp['server']);
                     $ftp->login(Yii::$app->getModule('shop')->ftp['login'], Yii::$app->getModule('shop')->ftp['password']);
                     $ftp->pasv(true);
                 }
-               // $model->setFtpClient($ftp);
+                // $model->setFtpClient($ftp);
                 foreach ($model->getImages()->all() as $im) {
                     $im->delete();
                 }
@@ -328,13 +331,23 @@ class ForsageStudio extends Component
                 foreach ($props['images'] as $file) {
                     $model->attachImage($file);
                 }
-                if($ftp){
+                if ($ftp) {
                     $ftp->close();
                 }
             }
         }
 
+        $eav = $model->getEavAttributes();
+        $eavkeys = [];
+        foreach ($eav as $e) {
+            foreach ($e as $o) {
+                $eavkeys[] = $o;
+            }
+        }
 
+
+        $model->elastic($eavkeys);
+        //$eav = $this->getEavAttributes();
         /*if (Yii::$app->has('elasticsearch')) {
             $options = [];
             $options['name'] = $model->name;
@@ -364,15 +377,15 @@ class ForsageStudio extends Component
                 }
             }*/
 
-            //$options['categories'][] = $model->main_category_id;
-            /*foreach ($model->categorization as $category) {
-                $options['categories'][] = $category->category;
-            }
+        //$options['categories'][] = $model->main_category_id;
+        /*foreach ($model->categorization as $category) {
+            $options['categories'][] = $category->category;
+        }
 
-            $options['categories'] = array_unique($options['categories']);
-            $result = Yii::$app->elasticsearch->post('product/_doc/' . $model->id, [], Json::encode($options));
+        $options['categories'] = array_unique($options['categories']);
+        $result = Yii::$app->elasticsearch->post('product/_doc/' . $model->id, [], Json::encode($options));
 
-        }*/
+    }*/
 
         return true;
     }
@@ -787,7 +800,7 @@ class ForsageStudio extends Component
     private function lastChildCategory($category)
     {
         if (!isset($category['child'])) {
-            if (isset($category['descriptions'][0],$category['descriptions'][1])) {
+            if (isset($category['descriptions'][0], $category['descriptions'][1])) {
                 //ukraine lang
                 return [
                     'id' => $category['id'],

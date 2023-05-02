@@ -63,16 +63,16 @@ class DefaultController extends AdminController
         ]);
     }
 
-    public function actionSupplierLoadProducts($id)
+    public function actionSupplierLoadProducts($id,$name)
     {
         $queue = Yii::$app->queue;
         $products = $this->fs->getSupplierProductIds($id, ['quantity' => 1]);
-        $supplier = Supplier::findOne(['forsage_id' => $id]);
-        if ($products && $supplier) {
+        //$supplier = Supplier::findOne(['forsage_id' => $id]);
+        if ($products) {
             $rows = [];
             Yii::$app->session->setFlash('success', Yii::t('forsage/default', 'RELOAD_SUPPLIER', [
                 count($products),
-                $supplier->name
+                $name
 
             ]));
             foreach ($products as $product) {

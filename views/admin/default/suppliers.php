@@ -39,7 +39,7 @@ echo \panix\engine\grid\GridView::widget([
                     //}
 
                     if ($model['id']) {
-                        return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model['id']], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
+                        return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model['id'],'name'=>$model['company']], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
                     }
                 }
             ]
