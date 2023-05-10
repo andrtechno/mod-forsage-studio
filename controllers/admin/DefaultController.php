@@ -59,11 +59,11 @@ class DefaultController extends AdminController
 
         return $this->render('suppliers', [
             'dataProvider' => $dataProvider,
-           // 'searchModel' => $searchModel
+            // 'searchModel' => $searchModel
         ]);
     }
 
-    public function actionSupplierLoadProducts($id,$name)
+    public function actionSupplierLoadProducts($id, $name)
     {
         $queue = Yii::$app->queue;
         $products = $this->fs->getSupplierProductIds($id, ['quantity' => 1]);
@@ -76,7 +76,7 @@ class DefaultController extends AdminController
 
             ]));
             foreach ($products as $product) {
-                $job = new ProductByIdQueue(['id' => $product,'images'=>true,'attributes'=>true]);
+                $job = new ProductByIdQueue(['id' => $product, 'images' => true, 'attributes' => true]);
                 if (Yii::$app->db->driverName == 'pgsql') {
                     $queue->push($job);
                 } else {

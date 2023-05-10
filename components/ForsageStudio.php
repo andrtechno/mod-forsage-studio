@@ -469,20 +469,15 @@ class ForsageStudio extends Component
     {
 
         $path = '';
-        $sub_category_uk = '';
-
         if (isset($props['categories'][0])) {
             $main_category = $props['categories'][0];
             $path = $main_category;
             if (isset($props['categories'][1])) {
                 $sub_category = $props['categories'][1]['name_ru'];
                 $path .= '/' . $sub_category;
-                $sub_category_uk = $props['categories'][1]['name_uk'];
             }
         }
 
-        //print_r($sub_category_ru);
-        //die;
         if (isset($this->categoriesPathCache[$path]))
             return $this->categoriesPathCache[$path];
 
@@ -509,7 +504,7 @@ class ForsageStudio extends Component
         }
         $branch = $leaf;*/
 
-
+        //print_r($result);die;
         $pathName = '';
         $tree = [];
         foreach ($result as $key => $name) {
@@ -868,10 +863,12 @@ class ForsageStudio extends Component
         $response = $this->conn_curl($url, $params);
         if (isset($response['success'])) {
             if ($response['success'] == 'true') {
-                return $response['product_ids'];
+                if($response['product_ids']){
+                    return $response['product_ids'];
+                }
             }
         }
-        self::log('Error: ' . __FUNCTION__ . '(' . $supplier_id . ') - ' . $response['message']);
+        self::log('Error: ' . __FUNCTION__ . '(' . $supplier_id . ') - ');
         return false;
     }
 
