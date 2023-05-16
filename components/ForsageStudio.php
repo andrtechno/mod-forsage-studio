@@ -421,45 +421,24 @@ class ForsageStudio extends Component
 
     private function generateProductName($index = 0)
     {
-        $name = '';
+        $tmpArray = [];
+        $tmpArray['{sku}'] = '';
         $category = explode('/', $this->generateCategory($index));
         $category = array_pop($category);
-        $name .= $category;
-        /*if (isset($product['brand'])) {
-            if (isset($product['brand']['name'])) {
-                if ($product['brand']['name'] == 'No brand') {
-                    $name .= ' ' . $product['supplier']['company'];
-                } else {
-                    $name .= ' ' . $product['brand']['name'];
-                }
-            } else {
-                $name .= $category;
-            }
-        }*/
-
-
-        $name .= ' ' . $this->product['supplier']['company'];
-
+        $tmpArray['{category}'] = $category;
+        $tmpArray['{supplier}'] = $this->product['supplier']['company'];
+        $tmpArray['{brand}'] = $this->product['brand']['name'];
 
         if (isset($this->product['vcode'])) {
-            $name .= ' ' . $this->product['vcode'];
+            $tmpArray['{sku}'] = $this->product['vcode'];
         }
 
-        $props = $this->getProductProps($this->product);
-
-        if (isset($props['attributes'])) {
-            if (isset($props['attributes'][6])) {
-                //$name .= ' ' . $props['attributes'][6]['value'];
-            }
-
-            //if (isset($props['in_box'])) {
-            //    $name .= ' / ' . $props['in_box']['value'];
-            //}
+        $name = Yii::$app->settings->get('forsage', 'product_name_tpl');
+        foreach ($tmpArray as $from => $to) {
+            $name = str_replace($from, $to, $name);
         }
 
         return $name;
-
-
     }
 
     /**
@@ -865,7 +844,7 @@ class ForsageStudio extends Component
         $response = $this->conn_curl($url, $params);
         if (isset($response['success'])) {
             if ($response['success'] == 'true') {
-                if($response['product_ids']){
+                if ($response['product_ids']) {
                     return $response['product_ids'];
                 }
             }

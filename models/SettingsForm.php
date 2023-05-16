@@ -29,15 +29,16 @@ class SettingsForm extends SettingsModel
     public $structure_bags;
 
     public $structure_accessories;
+    public $product_name_tpl;
 
     public function rules()
     {
         return [
-            [['hook_key', 'apikey', 'brand'], "required"],
+            [['hook_key', 'apikey', 'brand', 'product_name_tpl'], "required"],
             //[['product_related_bilateral', 'group_attribute', 'smart_bc', 'smart_title'], 'boolean'],
-            [['boots_type', 'clothes_type', 'accessories_type', 'structure_shoes', 'structure_clothes', 'structure_bags','structure_accessories'], 'integer'],
+            [['boots_type', 'clothes_type', 'accessories_type', 'structure_shoes', 'structure_clothes', 'structure_bags', 'structure_accessories'], 'integer'],
             //[['boots_type', 'clothes_type', 'bags_type', 'accessories_type', 'categories_shoes'], 'default'],
-            [['apikey', 'hook_key', 'categories_clothes', 'categories_bags', 'categories_shoes'], 'string'],
+            [['apikey', 'hook_key', 'categories_clothes', 'categories_bags', 'categories_shoes', 'product_name_tpl'], 'string'],
             [['out_stock_delete', 'brand'], 'boolean'],
             ['apikey', 'match', 'pattern' => "/^[a-zA-Z0-9\._\-]+$/u"],
             ['hook_key', 'match', 'pattern' => "/^[a-zA-Z0-9]+$/u", 'message' => 'Только буквы и цифры'],
@@ -64,6 +65,7 @@ class SettingsForm extends SettingsModel
             'boots_type' => '',
             'accessories_type' => '',
             'brand' => true,
+            'product_name_tpl' => '{category} {supplier} {sku}',
             'categories_shoes' => '',
             'categories_bags' => '18,40,10,41,175,42,49,35,106,63,50',
             'categories_clothes' => '100,94,93,104,74,89,66,92,90,69,85,98,83,88,87,91,76,101,47,72,96,84,97,99,95,103,86,107,82,102,109,110,124,178,136,139,155,152,160,119,116,123,117,113,156,149,174,150,111,148,126,153,114,112,108,70',
