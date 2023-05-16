@@ -55,8 +55,10 @@ class ForsageStudio extends Component
     public function __construct($config = [])
     {
         $this->settings = Yii::$app->settings->get('forsage');
-        $this->categories_clothes = explode(',', $this->settings->categories_clothes);
-        $this->categories_bags = explode(',', $this->settings->categories_bags);
+        if (isset($this->settings->categories_clothes))
+            $this->categories_clothes = explode(',', $this->settings->categories_clothes);
+        if (isset($this->settings->categories_bags))
+            $this->categories_bags = explode(',', $this->settings->categories_bags);
         if (!extension_loaded('intl')) {
             throw new ErrorException('PHP Extension intl not active.');
         }
@@ -337,16 +339,16 @@ class ForsageStudio extends Component
             }
         }
 
-        $eav = $model->getEavAttributes();
-        $eavkeys = [];
-        foreach ($eav as $e) {
-            foreach ($e as $o) {
-                $eavkeys[] = $o;
+        if (method_exists($model, 'elastic')) {
+            $eav = $model->getEavAttributes();
+            $eavkeys = [];
+            foreach ($eav as $e) {
+                foreach ($e as $o) {
+                    $eavkeys[] = $o;
+                }
             }
+            $model->elastic($eavkeys);
         }
-
-
-        $model->elastic($eavkeys);
         //$eav = $this->getEavAttributes();
         /*if (Yii::$app->has('elasticsearch')) {
             $options = [];
@@ -882,7 +884,7 @@ class ForsageStudio extends Component
                 return $response['categories'];
             }
         }
-        self::log('Error: ' . __FUNCTION__ . '(' . $supplier_id . ') - ' . $response['message']);
+        self::log('Error: ' . __FUNCTION__ . ' - ' . $response['message']);
         return false;
     }
 
