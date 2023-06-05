@@ -42,12 +42,7 @@ class DevController extends ConsoleController
      * @var ForsageStudio
      */
     private $fs;
-public function actionTest2($id){
-    $job = new ProductByIdQueue(['id' => $id,'images'=>false]);
 
-    Yii::$app->queue->push($job);
-
-}
     public function beforeAction($action)
     {
         if (!extension_loaded('intl')) {
@@ -421,9 +416,5 @@ public function actionTest2($id){
         }*/
     }
 
-    public static function log($mssage)
-    {
-        Yii::info($mssage);
-    }
 
 }
