@@ -343,8 +343,12 @@ class ForsageStudio extends Component
             $eav = $model->getEavAttributes();
             $eavkeys = [];
             foreach ($eav as $e) {
-                foreach ($e as $o) {
-                    $eavkeys[] = $o;
+                if(is_array($e)){
+                    foreach ($e as $o) {
+                        $eavkeys[] = $o;
+                    }
+                }else{
+                    Yii::info('error eav by FID'.$model->forsage_id.' ID '.$model->id,'forsage');
                 }
             }
             $model->elastic($eavkeys);

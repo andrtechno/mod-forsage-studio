@@ -5,6 +5,7 @@ namespace panix\mod\forsage\components;
 use Yii;
 use panix\mod\shop\models\Product;
 use yii\base\BaseObject;
+use yii\console\ExitCode;
 use yii\helpers\Console;
 use yii\queue\JobInterface;
 
@@ -23,6 +24,7 @@ class ProductByIdQueue extends BaseObject implements JobInterface
         $forsageClass = Yii::$app->getModule('forsage')->forsageClass;
         $fs = new $forsageClass;
         $product = $fs->getProduct($this->id);
+        $_SERVER['FORSAGE_ID'] = $this->id;
         if ($product) {
             if ($product->execute($this->images, $this->attributes)) {
                 Yii::info('addProduct ' . $this->id, 'forsage');
@@ -32,6 +34,6 @@ class ProductByIdQueue extends BaseObject implements JobInterface
         } else {
             Yii::info('NoGetProduct ' . $this->id, 'forsage');
         }
-        return true;
+        return ExitCode::OK;
     }
 }

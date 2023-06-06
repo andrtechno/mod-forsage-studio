@@ -7,6 +7,7 @@ use panix\mod\banner\models\BannerSearch;
 use panix\mod\forsage\components\ForsageStudio;
 use panix\mod\forsage\components\ProductByIdQueue;
 use panix\mod\forsage\components\ProductIdQueue;
+use panix\mod\forsage\models\ChangesForm;
 use panix\mod\shop\models\search\SupplierSearch;
 use panix\mod\shop\models\Supplier;
 use Yii;
@@ -60,6 +61,63 @@ class DefaultController extends AdminController
         return $this->render('suppliers', [
             'dataProvider' => $dataProvider,
             // 'searchModel' => $searchModel
+        ]);
+    }
+
+    public function actionChanges()
+    {
+        $this->pageName = 'Импорт за период';
+        $this->view->params['breadcrumbs'] = [
+            /*[
+                'label' => Yii::t('forsage/default', 'MODULE_NAME'),
+                'url' => ['suppliers']
+            ],*/
+            $this->pageName
+        ];
+        $post = Yii::$app->request->post();
+        $ids = [];
+        $model = new ChangesForm();
+        $model->date = date('Y-m-d');
+        if ($model->load(Yii::$app->request->post())) {
+            if ($model->validate()) {
+                $date_utc = new \DateTime($model->date . ' ' . $model->time);
+                $start_date = $date_utc->format('U');
+                $end_date = $date_utc->format('U') + (3600 * 2);
+
+                if (isset($post['type'])) {
+                    if ($post['type'] == 'new') {
+                        $products = $this->fs->getProducts($start_date, $end_date, ['with_descriptions' => 0]);
+                        if ($products) {
+                            foreach ($products as $product) {
+                                $ids[] = $product['id'];
+                            }
+                        }
+                    } else {
+                        $products = $this->fs->getChanges($start_date, $end_date);
+                        if (isset($products['success'])) {
+                            foreach ($products['product_ids'] as $product) {
+                                $ids[] = $product;
+                            }
+                        }
+                    }
+                }
+                if ($ids) {
+                    foreach ($ids as $id) {
+                        Yii::$app->queue->push(new ProductByIdQueue([
+                            'id' => $id,
+                        ]));
+                    }
+                }
+                $total = count($ids);
+                Yii::$app->session->setFlash('success', ChangesForm::t('SUCCESS_MSG', [
+                    $total, date('Y-m-d H:i',$start_date), date('Y-m-d H:i',$end_date)
+                ]));
+                return $this->refresh();
+            }
+        }
+
+        return $this->render('changes', [
+            'model' => $model
         ]);
     }
 

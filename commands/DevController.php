@@ -43,6 +43,14 @@ class DevController extends ConsoleController
      */
     private $fs;
 
+    //840690
+    public function actionPush($id){
+        //Yii::$app-
+        Yii::$app->queue->push(new ProductByIdQueue([
+            'id' => $id,
+        ]));
+
+    }
     public function beforeAction($action)
     {
         if (!extension_loaded('intl')) {
