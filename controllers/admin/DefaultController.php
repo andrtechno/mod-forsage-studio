@@ -34,7 +34,7 @@ class DefaultController extends AdminController
 
     public function actionSuppliers()
     {
-        $this->pageName = Yii::t('forsage/default', 'Поставщики');
+        $this->pageName = Yii::t('shop/admin', 'SUPPLIER');
         $this->view->params['breadcrumbs'] = [
             [
                 'label' => Yii::t('forsage/default', 'MODULE_NAME'),

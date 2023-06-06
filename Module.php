@@ -11,7 +11,7 @@ use yii\helpers\ArrayHelper;
 class Module extends WebModule implements BootstrapInterface
 {
 
-    public $icon = '';
+    public $icon = 'supplier';
     public $onlySuppliers = [];
     public $forsageClass = '\panix\mod\forsage\components\ForsageStudio';
     public $excludeCategories = [];
@@ -39,6 +39,50 @@ class Module extends WebModule implements BootstrapInterface
         );
     }
 
+    public function getAdminMenu()
+    {
+        return [
+            'modules' => [
+                'items' => [
+                    [
+                        'label' => Yii::t($this->id.'/default', 'MODULE_NAME'),
+                        'url' => '#',
+                        'icon' => $this->icon,
+                        'visible' => true,
+                        'items' => [
+                            [
+                                'label' => Yii::t('shop/admin', 'SUPPLIER'),
+                                'url' => ['/admin/forsage/default/suppliers'],
+                                'icon' => 'supplier',
+                                'visible' => true,
+                            ],
+                            [
+                                'label' => Yii::t($this->id.'/default', 'CHANGES'),
+                                'url' => ['/admin/forsage/default/changes'],
+                                'icon' => 'shopcart',
+                                'visible' => true,
+                            ],
+                            [
+                                'label' => Yii::t('app/default', 'SETTINGS'),
+                                'url' => ['/admin/forsage/settings'],
+                                'icon' => 'settings',
+                                'visible' => true,
+                            ],
+
+                        ]
+                    ],
+
+                ],
+            ],
+        ];
+    }
+
+    public function getAdminSidebar()
+    {
+        $menu = $this->getAdminMenu();
+        return \yii\helpers\ArrayHelper::merge($menu['modules']['items'], $menu['modules']['items'][0]['items']);
+    }
+
     public function getInfo()
     {
         return [
@@ -50,6 +94,5 @@ class Module extends WebModule implements BootstrapInterface
             'url' => ['/admin/forsage'],
         ];
     }
-
 
 }
