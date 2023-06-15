@@ -745,9 +745,9 @@ class ForsageStudio extends Component
 
         if (isset($mainCategory, $category)) {
             if ($mainCategory['id'] == self::CATEGORY_CLOTHES_ACCESSORIES) {
-                if (in_array($category['id'], $this->categories_clothes) && $this->settings->clothes_type) { //Одежда
+                if ($this->settings->clothes_type && in_array($category['id'], $this->categories_clothes)) { //Одежда
                     return $this->settings->clothes_type;
-                } elseif (in_array($category['id'], $this->categories_bags) && $this->settings->bags_type) { //сумки
+                } elseif ($this->settings->bags_type && in_array($category['id'], $this->categories_bags)) { //сумки
                     return $this->settings->bags_type;
                 } else {
                     return $this->settings->accessories_type;
