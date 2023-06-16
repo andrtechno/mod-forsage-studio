@@ -319,12 +319,12 @@ class ForsageStudio extends Component
         if ($reloadImages) {
             if (isset($props['images'])) {
 
-                $ftp = Yii::$app->getModule('shop')->ftpClient;
+                /*$ftp = Yii::$app->getModule('shop')->ftpClient;
                 if ($ftp) {
                     $ftp->connect(Yii::$app->getModule('shop')->ftp['server']);
                     $ftp->login(Yii::$app->getModule('shop')->ftp['login'], Yii::$app->getModule('shop')->ftp['password']);
                     $ftp->pasv(true);
-                }
+                }*/
                 // $model->setFtpClient($ftp);
                 foreach ($model->getImages()->all() as $im) {
                     $im->delete();
@@ -333,9 +333,19 @@ class ForsageStudio extends Component
                 foreach ($props['images'] as $file) {
                     $model->attachImage($file);
                 }
-                if ($ftp) {
-                    $ftp->close();
+
+                foreach ($model->getImages()->all() as $img) {
+                    $original2 = $img->get('small', ['watermark' => false]);
+                    $original3 = $img->get('medium', ['watermark' => false]);
+                    $original3 = $img->get('preview', ['watermark' => false]);
                 }
+                //$ftp = Yii::$app->getModule('shop')->ftpClient;
+                //$deleted2 = $ftp->rmdir(Yii::$app->getModule('shop')->ftp['path'] . "/uploads/product/{$model->id}");
+                //$deleted2 = $ftp->rmdir(Yii::$app->getModule('shop')->ftp['path'] . "/assets/product/{$model->id}");
+                //var_dump($deleted2);
+                //if ($ftp) {
+                //    $ftp->close();
+               // }
             }
         }
 
