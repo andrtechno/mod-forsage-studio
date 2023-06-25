@@ -3,7 +3,6 @@
 namespace panix\mod\forsage\commands;
 
 use panix\mod\forsage\components\ProductByIdQueue;
-use panix\mod\forsage\components\ProductQueue;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Brand;
 use panix\mod\shop\models\Category;

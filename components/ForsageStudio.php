@@ -120,8 +120,8 @@ class ForsageStudio extends Component
         $model->slug = CMS::slug($model->name_uk);
 
         $model->switch = 1;
-        $model->ukraine = (isset($props['ukraine'])) ? $props['ukraine'] : 0;
-        $model->leather = (isset($props['leather'])) ? $props['leather'] : 0;
+        //$model->ukraine = (isset($props['ukraine'])) ? $props['ukraine'] : 0;
+        //$model->leather = (isset($props['leather'])) ? $props['leather'] : 0;
         if ($this->product['quantity'] == 1) {
             $model->availability = Product::STATUS_IN_STOCK; //есть на складе
         } elseif ($this->product['quantity'] < 0) {
@@ -156,7 +156,7 @@ class ForsageStudio extends Component
             $model->unit = 1;
         }
 
-//print_r($this->product['quantity']);die;
+
         $model->quantity = 1;//$this->product['quantity'];
 
         $model->video = (isset($props['video'])) ? $props['video'] : NULL;
@@ -167,10 +167,6 @@ class ForsageStudio extends Component
         if (!$model->isNewRecord) {
             $model->discount = NULL;
             if (isset($props['price_old'])) {
-                /*if ($props['price_old'] > $props['price']) {
-                    $model->discount = ($props['price_old'] - $props['price']);
-                    $model->price = $props['price_old'];
-                }*/
                 if ($props['price_old'] > $props['price']) {
                     if (($props['price_old'] - $props['price']) < $props['price']) {
                         $model->discount = ($props['price_old'] - $props['price']);
@@ -190,20 +186,7 @@ class ForsageStudio extends Component
             $model->full_description_uk = $prop['description'];
         }
 
-        /*$full_name_category = '';
-
-        if (isset($props['categories'][0])) {
-            $main_category = $props['categories'][0];
-            $full_name_category = $main_category;
-            if (isset($props['categories'][1])) {
-                $sub_category = $props['categories'][1]['name'];
-                $full_name_category .= '/' . $sub_category;
-            }
-        }*/
-
-
         $model->main_category_id = $this->getCategoryByPath($props);
-
 
         if (isset($this->product['supplier']) && $model->isNewRecord) {
             $supplier = Supplier::findOne(['forsage_id' => $this->product['supplier']['id']]);
@@ -218,7 +201,6 @@ class ForsageStudio extends Component
             }
             $model->supplier_id = $supplier->id;
         }
-
 
         //Записывать бренд как бренд или как поставщика.
         if ($this->settings->brand) {
@@ -265,50 +247,6 @@ class ForsageStudio extends Component
             $this->processCategories($model, $model->main_category_id);
         }
         if (isset($props['attributes'])) {
-            if (isset($props['attributes'][6]['value'])) { // && $model->type_id == self::TYPE_BOOTS
-                /*if (preg_match('/^(\d+)\-(\d+)$/', $props['attributes'][6]['value'], $match)) { // check 11-22
-                    $explode = explode('-', $props['attributes'][6]['value']);
-
-                    $size_min = (int)$explode[0];
-                    //$size_max = (int)$explode[1];
-
-                    $sizes = [];
-                    //if ($size_min) { //comment for 0-12 size "0" = false;
-                    foreach (Yii::$app->getModule('forsage')->sizeGroup as $key => $l) {
-                        $liste = explode('-', $key);
-                        if (in_array($size_min, range($liste[0], $liste[1]))) {
-                            // if (in_array($liste[0], range($size_min, $size_max))) {
-                            $sizes[] = $l;
-                            break;
-                        }
-
-                    }
-                    //} else {
-                    //    $sizes[] = $props['attributes'][6]['value'];
-                    // }
-                    if (!empty($sizes[0])) {
-                        $props['attributes'][99999] = [
-                            'id' => 99999,
-                            'name' => 'Размер обуви',
-                            'value' => $sizes[0]
-                        ];
-                    }
-                } elseif (preg_match('/^([a-zA-Z+])\-([a-zA-Z+])$/', $props['attributes'][6]['value'], $match)) { // check S-XL
-                    $props['attributes'][99998] = [
-                        'id' => 99998,
-                        'name' => 'Размер',
-                        'value' => $props['attributes'][6]['value']
-                    ];
-                }*/
-                /*if (preg_match('/^([a-zA-Z+])\-([a-zA-Z+])$/', $props['attributes'][6]['value'], $match)) { // check S-XL
-                    $props['attributes'][99998] = [
-                        'id' => 99998,
-                        'name' => 'Размер',
-                        'value' => $props['attributes'][6]['value']
-                    ];
-                }*/
-
-            }
             if ($reloadAttributes) {
                 $this->attributeData($model, $props['attributes']);
             }
@@ -318,34 +256,12 @@ class ForsageStudio extends Component
         //set image
         if ($reloadImages) {
             if (isset($props['images'])) {
-
-                /*$ftp = Yii::$app->getModule('shop')->ftpClient;
-                if ($ftp) {
-                    $ftp->connect(Yii::$app->getModule('shop')->ftp['server']);
-                    $ftp->login(Yii::$app->getModule('shop')->ftp['login'], Yii::$app->getModule('shop')->ftp['password']);
-                    $ftp->pasv(true);
-                }*/
-                // $model->setFtpClient($ftp);
                 foreach ($model->getImages()->all() as $im) {
                     $im->delete();
                 }
-
                 foreach ($props['images'] as $file) {
                     $model->attachImage($file);
                 }
-
-                foreach ($model->getImages()->all() as $img) {
-                    $original2 = $img->get('small', ['watermark' => false]);
-                    $original3 = $img->get('medium', ['watermark' => false]);
-                    $original3 = $img->get('preview', ['watermark' => false]);
-                }
-                //$ftp = Yii::$app->getModule('shop')->ftpClient;
-                //$deleted2 = $ftp->rmdir(Yii::$app->getModule('shop')->ftp['path'] . "/uploads/product/{$model->id}");
-                //$deleted2 = $ftp->rmdir(Yii::$app->getModule('shop')->ftp['path'] . "/assets/product/{$model->id}");
-                //var_dump($deleted2);
-                //if ($ftp) {
-                //    $ftp->close();
-               // }
             }
         }
 
@@ -363,46 +279,6 @@ class ForsageStudio extends Component
             }
             $model->elastic($eavkeys);
         }
-        //$eav = $this->getEavAttributes();
-        /*if (Yii::$app->has('elasticsearch')) {
-            $options = [];
-            $options['name'] = $model->name;
-            // $optionse['name_ru'] = $this->name_ru;
-            //$optionse['name_uk'] = $this->name_uk;
-            if ($model->currency_id) {
-                $currency = Currency::findOne($model->currency_id);
-                $options['price'] = (double)$model->price * $currency->rate;
-            } else {
-                $options['price'] = (double)$model->price;
-            }
-            $options['brand_id'] = $model->brand_id;
-            $options['slug'] = $model->slug;
-            $options['created_at'] = (int)$model->created_at;
-            $options['availability'] = (int)$model->availability;
-            $options['sku'] = $model->sku;
-            $options['switch'] = (int)$model->switch;
-            $options['discount'] = (int)$model->discount;
-            $options['leather'] = (int)$model->leather;
-            $options['ukraine'] = (int)$model->ukraine;
-            $options['options'] = $this->_eav;
-            //$eav = $model->getEavAttributes();
-
-            /*foreach ($eav as $e) {
-                foreach ($e as $o) {
-                    $options['options'][] = $o;
-                }
-            }*/
-
-        //$options['categories'][] = $model->main_category_id;
-        /*foreach ($model->categorization as $category) {
-            $options['categories'][] = $category->category;
-        }
-
-        $options['categories'] = array_unique($options['categories']);
-        $result = Yii::$app->elasticsearch->post('product/_doc/' . $model->id, [], Json::encode($options));
-
-    }*/
-
         return true;
     }
 
@@ -625,7 +501,6 @@ class ForsageStudio extends Component
 
     public function getProductProps($product)
     {
-        // $productData = $this->getProductData($product);
 
         $result = false;
         $result['success'] = true;
@@ -829,9 +704,7 @@ class ForsageStudio extends Component
             $params['quantity'] = 1;
         }
 
-
         $url = "https://forsage-studio.com/api/get_products/";
-
         $response = $this->conn_curl($url, $params);
 
         if (isset($response['success'])) {
@@ -968,7 +841,6 @@ class ForsageStudio extends Component
      */
     public function getChanges($start = 3600, $end = 0)
     {
-
         $url = "https://forsage-studio.com/api/get_changes/";
         $params['start_date'] = $start;
         $params['end_date'] = $end;
