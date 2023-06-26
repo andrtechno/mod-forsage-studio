@@ -3,10 +3,13 @@
 namespace panix\mod\forsage\components;
 
 
+use panix\engine\components\ImageHandler;
 use panix\mod\shop\models\Currency;
+use panix\mod\shop\models\ProductImage;
 use Yii;
 use yii\base\Component;
 use yii\base\ErrorException;
+use yii\helpers\FileHelper;
 use yii\httpclient\Client;
 use yii\helpers\Json;
 use yii\helpers\Console;
@@ -107,12 +110,15 @@ class ForsageStudio extends Component
             return false;
         }
 
+
         if (!$model) {
             $model = new Product();
             $model->type_id = $props['type_id'];
             $model->forsage_id = $this->product['id'];
             $model->created_at = $this->product['photosession_date'];
         }
+        //$model->created_at = $this->product['photosession_date'];
+        $model->detachBehavior('timestamp');
         $model->sku = $this->product['vcode'];
         //$categoryName = $this->generateCategory($this->product);
         $model->name_ru = $this->generateProductName(0);
@@ -260,7 +266,8 @@ class ForsageStudio extends Component
                     $im->delete();
                 }
                 foreach ($props['images'] as $file) {
-                    $model->attachImage($file);
+                    //$model->attachImage($file['url']);
+                    $this->attachImage($model, $file);
                 }
             }
         }
@@ -269,12 +276,12 @@ class ForsageStudio extends Component
             $eav = $model->getEavAttributes();
             $eavkeys = [];
             foreach ($eav as $e) {
-                if(is_array($e)){
+                if (is_array($e)) {
                     foreach ($e as $o) {
                         $eavkeys[] = $o;
                     }
-                }else{
-                    Yii::info('error eav by FID'.$model->forsage_id.' ID '.$model->id,'forsage');
+                } else {
+                    Yii::info('error eav by FID' . $model->forsage_id . ' ID ' . $model->id, 'forsage');
                 }
             }
             $model->elastic($eavkeys);
@@ -282,6 +289,89 @@ class ForsageStudio extends Component
         return true;
     }
 
+
+    public function attachImage($model, $entity)
+    {
+        $module = Yii::$app->getModule('shop');
+        $file = $entity['url'];
+        $id = $entity['id'];
+        //$uniqueName = md5($model->id . ':' . $model->supplier_id . ':' . $id);
+        $uniqueName = mb_strtolower(\panix\engine\CMS::gen(10));
+        $isDownloaded = preg_match('/http(s?)\:\/\//i', $file);
+
+        if (!$model->id) {
+            throw new \Exception('Owner must have primaryKey when you attach image!');
+        }
+        if ($module->ftp) {
+            $path = Yii::getAlias(Yii::getAlias("@runtime"));
+        } else {
+            $path = Yii::getAlias(Yii::getAlias("@uploads/store/product/{$model->id}"));
+        }
+
+        if ($isDownloaded) {
+            $downloaded = $model->downloadFile($file, $path, $uniqueName);
+            if ($downloaded) {
+                $file = $downloaded;
+            } else {
+                return false;
+            }
+        }
+
+
+        $extension = pathinfo($file, PATHINFO_EXTENSION);
+
+        $pictureFileName = $uniqueName . '.' . $extension;
+        $newAbsolutePath = FileHelper::normalizePath($path . DIRECTORY_SEPARATOR . $pictureFileName);
+
+        if (!$module->ftp) {
+            $createDir = FileHelper::createDirectory($path, 0775, true);
+        }
+        $image = new ProductImage();
+        $image->product_id = $model->id;
+        $image->filename = $pictureFileName;
+        $image->alt_title = $model->name_uk;
+        $image->created_at = $model->created_at;
+        $image->forsage_id = $id;
+
+        if (!$image->save()) {
+            return false;
+        }
+
+        if (count($image->getErrors()) > 0) {
+            $ar = array_shift($image->getErrors());
+            FileHelper::unlink($newAbsolutePath);
+            throw new \Exception(array_shift($ar));
+        }
+
+        $img = $model->getImage();
+
+        //If main image not exists
+        if ($img == null) {
+            $model->setMainImage($image);
+        }
+
+        if ($module->ftp) {
+            $ftpClient = ftp_connect($module->ftp['server']);
+            ftp_login($ftpClient, $module->ftp['login'], $module->ftp['password']);
+            @ftp_pasv($ftpClient, true);
+
+            $image->ftp = $ftpClient;
+            $ftpPath = "/uploads/product";
+            if (!@ftp_mkdir($ftpClient, $ftpPath)) {
+                //echo "Не удалось создать директорию";
+            }
+
+            $upload = ftp_put($ftpClient, "$ftpPath/{$image->product_id}_{$image->filename}", $newAbsolutePath, FTP_BINARY);
+
+            $original2 = $image->createVersionFtp('small', ['watermark' => false]);
+            $original3 = $image->createVersionFtp('medium', ['watermark' => false]);
+
+            ftp_close($ftpClient);
+            FileHelper::unlink($newAbsolutePath);
+        }
+
+        return $image;
+    }
 
     /**
      * @param $product
@@ -512,7 +602,10 @@ class ForsageStudio extends Component
                         $result['video'] = $characteristic['value'];
                     }
                     if ($characteristic['type'] == 'image') {
-                        $result['images'][] = $characteristic['value'];
+                        $result['images'][] = [
+                            'id' => $characteristic['id'],
+                            'url' => $characteristic['value']
+                        ];
                     }
                     if ($characteristic['id'] == 35) { //Валюта продажи
                         if ($characteristic['value'] == 'доллар' || $characteristic['value'] == 'долар') {

@@ -15,6 +15,7 @@ use panix\mod\shop\models\Supplier;
 use panix\mod\shop\models\Brand;
 use panix\mod\shop\models\Attribute;
 use panix\mod\shop\models\AttributeOption;
+use panix\mod\shop\models\ProductImage;
 
 class m200917_193214_forsage_studio extends Migration
 {
@@ -24,17 +25,18 @@ class m200917_193214_forsage_studio extends Migration
     public function up()
     {
         $tableOptions = 'CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci ENGINE=InnoDB';
-        $this->addColumn(Product::tableName(), 'forsage_id', 'int');
-        $this->addColumn(Product::tableName(), 'ukraine', $this->boolean()->defaultValue(0));
-        $this->addColumn(Product::tableName(), 'leather', $this->boolean()->defaultValue(0));
-        $this->addColumn(Supplier::tableName(), 'forsage_id', 'int');
-        $this->addColumn(Brand::tableName(), 'forsage_id', 'int');
-        $this->addColumn(Attribute::tableName(), 'forsage_id', 'int');
+        $this->addColumn(Product::tableName(), 'forsage_id', $this->integer()->null());
+        //$this->addColumn(Product::tableName(), 'ukraine', $this->boolean()->defaultValue(0));
+        //$this->addColumn(Product::tableName(), 'leather', $this->boolean()->defaultValue(0));
+        $this->addColumn(Supplier::tableName(), 'forsage_id', $this->integer()->null());
+        $this->addColumn(Brand::tableName(), 'forsage_id', $this->integer()->null());
+        $this->addColumn(Attribute::tableName(), 'forsage_id', $this->integer()->null());
+        $this->addColumn(ProductImage::tableName(), 'forsage_id', $this->integer()->null());
 
-        $this->createIndex('forsage_id', Product::tableName(), 'forsage_id');
-        $this->createIndex('forsage_id', Supplier::tableName(), 'forsage_id');
-        $this->createIndex('forsage_id', Attribute::tableName(), 'forsage_id');
-        $this->createIndex('forsage_id', Brand::tableName(), 'forsage_id');
+        //$this->createIndex('forsage_id', Product::tableName(), 'forsage_id');
+        //$this->createIndex('forsage_id', Supplier::tableName(), 'forsage_id');
+        //$this->createIndex('forsage_id', Attribute::tableName(), 'forsage_id');
+        //$this->createIndex('forsage_id', Brand::tableName(), 'forsage_id');
         $this->loadSettings();
     }
 
@@ -42,11 +44,12 @@ class m200917_193214_forsage_studio extends Migration
     {
 
         $this->dropColumn(Product::tableName(), 'forsage_id');
-        $this->dropColumn(Product::tableName(), 'ukraine');
-        $this->dropColumn(Product::tableName(), 'leather');
+        //$this->dropColumn(Product::tableName(), 'ukraine');
+        //$this->dropColumn(Product::tableName(), 'leather');
         $this->dropColumn(Supplier::tableName(), 'forsage_id');
         $this->dropColumn(Brand::tableName(), 'forsage_id');
         $this->dropColumn(Attribute::tableName(), 'forsage_id');
+        $this->dropColumn(ProductImage::tableName(), 'forsage_id');
         if (Yii::$app->get('settings')) {
             Yii::$app->settings->clear('forsage');
         }
