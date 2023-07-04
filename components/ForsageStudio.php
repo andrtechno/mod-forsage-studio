@@ -331,7 +331,7 @@ class ForsageStudio extends Component
         $image->filename = $pictureFileName;
         $image->alt_title = $model->name_uk;
         $image->created_at = $model->created_at;
-        $image->forsage_id = $id;
+        //$image->forsage_id = $id;
 
         if (!$image->save()) {
             return false;
