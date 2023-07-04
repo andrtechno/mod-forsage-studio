@@ -651,7 +651,7 @@ class ForsageStudio extends Component
 
                         if (isset($characteristic['descriptions'])) {
                             if (in_array($characteristic['value'], ['жінки', 'женщины'])) {
-                                $result['categories'][0] = 'Wooman';
+                                $result['categories'][0] = 'Woman';
                             } elseif (in_array($characteristic['value'], ['чоловіки', 'мужчины'])) {
                                 $result['categories'][0] = 'Man';
                             } elseif (in_array($characteristic['value'], ['діти', 'дети'])) {
