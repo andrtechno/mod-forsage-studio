@@ -116,6 +116,8 @@ class ForsageStudio extends Component
             $model->type_id = $props['type_id'];
             $model->forsage_id = $this->product['id'];
             $model->created_at = $this->product['photosession_date'];
+        } else {
+            $model->updated_at = time();
         }
         //$model->created_at = $this->product['photosession_date'];
         $model->detachBehavior('timestamp');
