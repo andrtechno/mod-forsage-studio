@@ -354,7 +354,7 @@ class ForsageStudio extends Component
 
         if ($module->ftp) {
             $ftpClient = ftp_connect($module->ftp['server']);
-            ftp_login($ftpClient, $module->ftp['login'], $module->ftp['password']);
+            @ftp_login($ftpClient, $module->ftp['login'], $module->ftp['password']);
             @ftp_pasv($ftpClient, true);
 
             $image->ftp = $ftpClient;
