@@ -463,8 +463,8 @@ class ForsageStudio extends Component
         foreach ($result as $key => $name) {
             $test = explode(':', trim($name));
             if (count($test) > 1) {
-                $pathName .= '/' . trim($test[1]);
-                $pathName2 .= '/' . trim($test[2]);
+                $pathName .= '/' . trim($test[2]);
+                $pathName2 .= '/' . trim($test[1]);
             } else {
                 $pathName .= '/' . trim($name);
                 $pathName2 .= '/' . trim($name);
