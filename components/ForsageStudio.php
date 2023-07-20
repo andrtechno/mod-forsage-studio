@@ -433,14 +433,15 @@ class ForsageStudio extends Component
 
         $path = '';
         if (isset($props['categories'][0])) {
-            $main_category = $props['categories'][0];
-            $path = $main_category;
-            if (isset($props['categories'][1])) {
-                $sub_category = $props['categories'][1]['name_ru'];
-                $path .= '/' . $sub_category;
+            foreach ($props['categories'] as $name) {
+                if (is_array($name)) {
+                    //$path .= '/' . $name['name_ru'] . ':' . $name['name_uk'];
+                    $path .= '/' . implode(':', $name);
+                } else {
+                    $path .= $name;
+                }
             }
         }
-
         if (isset($this->categoriesPathCache[$path]))
             return $this->categoriesPathCache[$path];
 
@@ -450,49 +451,53 @@ class ForsageStudio extends Component
         $result = preg_split($this->subCategoryPattern, $path, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
         $result = array_map('stripcslashes', $result);
 
-
-        // $test = $result;
-        // krsort($test);
-
         $parent = $this->rootCategory;
-        $level = 2; // Level 1 is only root
+        $level = 1; // Level 1 is only root
         /** @var \panix\engine\behaviors\nestedsets\NestedSetsBehavior $model */
 
-        /*$leaf = array_pop($result);
-        $tree = [];
-        $branch = &$tree;
-        foreach ($result as $name) {
-            $branch[$name] = [];
-            $branch = &$branch[$name];
-        }
-        $branch = $leaf;*/
 
-        //print_r($result);die;
         $pathName = '';
+        $pathName2 = '';
         $tree = [];
+
         foreach ($result as $key => $name) {
-            $pathName .= '/' . trim($name);
-            $tree[] = substr($pathName, 1);
+            $test = explode(':', trim($name));
+            if (count($test) > 1) {
+                $pathName .= '/' . trim($test[1]);
+                $pathName2 .= '/' . trim($test[2]);
+            } else {
+                $pathName .= '/' . trim($name);
+                $pathName2 .= '/' . trim($name);
+            }
+
+            $tree[] = [
+                substr($pathName, 1),
+                substr($pathName2, 1)
+            ];
         }
 
+        foreach ($tree as $key => $lang) {
 
-        foreach ($tree as $key => $name) {
-            $object = explode('/', trim($name));
-
-            $model = Category::find()->where(['path_hash' => md5(mb_strtolower($name))])->one();
+            $objectRu = explode('/', trim($lang[1]));
+            $objectUk = explode('/', trim($lang[0]));
+            $model = Category::find()->where(['path_hash' => md5(mb_strtolower($lang[1]))])->one();
 
             if (!$model) {
                 $model = new Category;
-                $model->name_uk = end($object);
-                $model->name_ru = end($object);
+                $model->name_uk = end($objectUk);
+                $model->name_ru = end($objectRu);
                 $model->slug = CMS::slug($model->name_ru);
+                //print_r($model->name_uk);
+                //print_r($model->name_ru);
                 $model->appendTo($parent);
+            }else{
+                $model->name_uk = end($objectUk);
+                $model->name_ru = end($objectRu);
             }
-
             $parent = $model;
             $level++;
-
         }
+
 
         // Cache category id
         if (isset($model)) {
