@@ -601,9 +601,19 @@ class ForsageStudio extends Component
 
         $result = false;
         $result['success'] = true;
-        $result['currency_id'] = NULL;
+        $cat = $this->getChildCategory($product);
+        // print_r($cat);die;
+        $result['type_id'] = $this->getTypeId($product['category'], $cat);
+        $result['unit'] = 3; //по умолчанию ящик
+
         if (isset($product['characteristics'])) {
-            foreach ($product['characteristics'] as $characteristic) {
+            $renew = [];
+            foreach ($product['characteristics'] as $new) {
+                $renew[$new['id']] = $new;
+            }
+
+            foreach ($renew as $id => $characteristic) {
+
                 if (!empty($characteristic['value']) && ($characteristic['value'] != '-')) {
                     if ($characteristic['id'] == 53) { //Видеообзор
                         $result['video'] = $characteristic['value'];
@@ -621,6 +631,37 @@ class ForsageStudio extends Component
                     }
                     if ($characteristic['id'] == 25) { //Цена продажи
                         $result['price'] = str_replace(',', '.', trim($characteristic['value']));
+                    }
+                    if ($characteristic['id'] == 5) { //Материал изделия
+                        //if(preg_match('/шкіра|leather|кожа/ui',$characteristic['value'])){
+                        if (preg_match('/^(натуральна\я?)\s(шкіра|кожа|нубук)\-?$/ui', $characteristic['value'])) {
+                            $result['leather'] = true;
+                        }
+
+                        $ru = explode('-', trim($characteristic['descriptions'][0]['value']));
+                        $uk = explode('-', trim($characteristic['descriptions'][1]['value']));
+                        $result['attributes'][9995] = [
+                            'id' => 9995,
+                            'name' => 'Материал изделия (filter)',
+                            'value' => $characteristic['value'],
+                            'descriptions' => [
+                                [
+                                    'code' => 'ru',
+                                    'name' => $characteristic['descriptions'][0]['name'],
+                                    'value' => $ru[0],
+                                ],
+                                [
+                                    'code' => 'uk',
+                                    'name' => $characteristic['descriptions'][1]['name'],
+                                    'value' => $uk[0],
+                                ]
+                            ]
+                        ];
+                    }
+                    if ($characteristic['id'] == 11) { //Страна
+                        if (preg_match('/україна|ukraine|украина/ui', $characteristic['value'])) {
+                            $result['ukraine'] = true;
+                        }
                     }
                     if ($characteristic['id'] == 47) { //Старая цена продажи
                         $result['price_old'] = str_replace(',', '.', trim($characteristic['value']));
@@ -655,57 +696,352 @@ class ForsageStudio extends Component
                     }
                     if ($characteristic['id'] == 39) { //женщины, мужчины и дети (Пол)
                         //if (in_array($productData['type_id'], array(self::TYPE_BOOTS_KIDS, self::TYPE_BOOTS))) {
+                        if ($product['category']['id'] == self::CATEGORY_BOOTS) {
 
-                        if (isset($characteristic['descriptions'])) {
-                            if (in_array($characteristic['value'], ['жінки', 'женщины'])) {
-                                $result['categories'][0] = 'Woman';
-                            } elseif (in_array($characteristic['value'], ['чоловіки', 'мужчины'])) {
-                                $result['categories'][0] = 'Man';
-                            } elseif (in_array($characteristic['value'], ['діти', 'дети'])) {
-                                $result['categories'][0] = 'Kids';
-                            } else {
-                                $result['success'] = false;
-                                $result['error'][] = 'Пол не задан';
+                            $categories_shoes = explode(',', $this->settings->categories_shoes);
+                            if ($categories_shoes) {
+                                if (in_array($cat['id'], $categories_shoes)) {
+                                    $result['success'] = false;
+                                    $result['error'][] = 'Exclude category';
+                                }
                             }
-                        } else {
-                            if ($characteristic['value'] == 'женщины') {
-                                $result['categories'][0] = 'Женская';
-                            } elseif ($characteristic['value'] == 'мужчины') {
-                                $result['categories'][0] = 'Мужская';
-                            } elseif ($characteristic['value'] == 'дети') {
-                                $result['categories'][0] = 'Детская';
+
+
+                            if (isset($characteristic['descriptions'])) {
+                                if (in_array($characteristic['value'], ['жінки', 'женщины'])) {
+                                    $sex = 'Woman';
+                                } elseif (in_array($characteristic['value'], ['чоловіки', 'мужчины'])) {
+                                    $sex = 'Man';
+                                } elseif (in_array($characteristic['value'], ['діти', 'дети'])) {
+                                    $sex = 'Kids';
+                                } elseif (in_array($characteristic['value'], ['унісекс', 'унисекс'])) {
+
+                                    if (preg_match('/^(\d+)\-(\d+)$/', $renew[6]['value'], $match)) {
+                                        // $explode = explode('-', $product['characteristics'][6]['value']);
+
+                                        $size_min = (int)$match[1];
+                                        $result['size_min'] = $size_min;
+                                        if ($size_min >= 41) {
+                                            $sex = 'Man';
+                                        } elseif ($size_min <= 35) {
+                                            $sex = 'Kids';
+                                        } elseif ($size_min >= 36 && $size_min < 41) {
+                                            $sex = 'Woman';
+                                        } else {
+                                            $result['success'] = false;
+                                            $result['error'][] = 'Пол Унисекс';
+                                        }
+                                    }
+                                } else {
+                                    $result['success'] = false;
+                                    $result['error'][] = 'Пол не задан 1';
+                                }
+
+                                if ($this->settings->structure_shoes == 1) {
+                                    $result['categories'][0] = 'Shoes';
+                                    $result['categories'][1] = [
+                                        'name_uk' => $sex,
+                                        'name_ru' => $sex
+                                    ];
+                                } elseif ($this->settings->structure_shoes == 2) {
+                                    $result['categories'][0] = 'Shoes';
+                                    $result['categories'][1] = [
+                                        'name_uk' => $sex,
+                                        'name_ru' => $sex
+                                    ];
+                                    $result['categories'][2] = [
+                                        'name_uk' => $cat['name_uk'],
+                                        'name_ru' => $cat['name_ru'],
+                                        'id' => $cat['id']
+                                    ];
+                                } elseif ($this->settings->structure_shoes == 3) {
+                                    $result['categories'][0] = 'Shoes';
+                                    $result['categories'][1] = [
+                                        'name_uk' => $cat['name_uk'],
+                                        'name_ru' => $cat['name_ru'],
+                                        'id' => $cat['id']
+                                    ];
+                                } elseif ($this->settings->structure_shoes == 4) {
+                                    $result['categories'][0] = $sex;
+                                } elseif ($this->settings->structure_shoes == 5) {
+                                    $result['categories'][0] = $sex;
+                                    $result['categories'][1] = [
+                                        'name_uk' => $cat['name_uk'],
+                                        'name_ru' => $cat['name_ru'],
+                                        'id' => $cat['id']
+                                    ];
+                                } else {
+                                    $result['categories'][0] = 'Shoes';
+                                }
+
+
                             } else {
-                                $result['success'] = false;
-                                $result['error'][] = 'Пол не задан';
+                                //вроде не юзаеться нужно протестить
+
+                                if ($characteristic['value'] == 'женщины') {
+                                    //$result['categories'][0] = 'Женская';
+                                } elseif ($characteristic['value'] == 'мужчины') {
+                                    //$result['categories'][0] = 'Мужская';
+                                } elseif ($characteristic['value'] == 'дети') {
+                                    //$result['categories'][0] = 'Детская';
+                                } else {
+                                    //$result['success'] = false;
+                                    //$result['error'][] = 'Пол не задан 2';
+                                }
+                            }
+                        } elseif ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES) {
+                            if (isset($characteristic['descriptions'])) {
+                                if (in_array($characteristic['value'], ['жінки', 'женщины'])) {
+                                    $sex = 'Woman';
+                                } elseif (in_array($characteristic['value'], ['чоловіки', 'мужчины'])) {
+                                    $sex = 'Man';
+                                } elseif (in_array($characteristic['value'], ['діти', 'дети'])) {
+                                    $sex = 'Kids';
+                                } elseif (in_array($characteristic['value'], ['унісекс', 'унисекс'])) {
+
+                                    if (isset($renew[6])) {
+                                        if (preg_match('/^(\d+)\-(\d+)$/', $renew[6]['value'], $match)) {
+                                            $size_min = (int)$match[1];
+                                            $result['size_min'] = $size_min;
+                                            if ($size_min >= 41) {
+                                                $sex = 'Man';
+                                            } elseif ($size_min <= 35) {
+                                                $sex = 'Kids';
+                                            } elseif ($size_min >= 36 && $size_min < 41) {
+                                                $sex = 'Woman';
+                                            } else {
+                                                $result['success'] = false;
+                                                $result['error'][] = 'Пол Унисекс';
+                                            }
+                                        } elseif (preg_match('/^(\w+)\-(\w+)$/', $renew[6]['value'], $match)) {
+                                            //if else S-XL etc.
+                                            //Также проблема с "пледами"
+                                        }
+                                    }
+                                } else {
+                                    $result['success'] = false;
+                                    $result['error'][] = 'Пол не задан 1';
+                                }
                             }
                         }
-                        //}
                     }
-
-                    // }
                 }
             }
 
-            if (!isset($result['images'])) {
-                $result['success'] = false;
-                $result['error'][] = 'Unknown product images error';
-                // self::log('Unknown product images error');
-            }
 
+            if ($cat) {
 
-            if ($this->getChildCategory($product)) {
-                $result['type_id'] = $this->getTypeId($product['category'], $product);
-                $result['categories'][1] = $this->getChildCategory($product);
+                if ($result['type_id'] == $this->settings->boots_type) {
+                    if (preg_match('/^(\d+)\-(\d+)$/', $result['attributes'][6]['value'], $match)) { // check 11-22
+                        $explode = explode('-', $result['attributes'][6]['value']);
+                        $size_min = (int)$explode[0];
+                        //$size_max = (int)$explode[1];
 
-                //for optikon
-                if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES) {
-                    if (in_array($result['categories'][1]['id'], array_keys($this->categories_clothes))) { //Одежда
-                        $result['type_id'] = Yii::$app->settings->get('forsage', 'clothes_type');
-                        $result['categories'][0] = 'Cloth';
-                    } else { //аксессуары
-                        $result['type_id'] = 3;
-                        $result['categories'][0] = 'Other';
+                        $sizes = [];
+                        //if ($size_min) { //comment for 0-12 size "0" = false;
+                        foreach (Yii::$app->getModule('forsage')->sizeGroup as $key => $l) {
+                            $liste = explode('-', $key);
+                            if (in_array($size_min, range($liste[0], $liste[1]))) {
+                                // if (in_array($liste[0], range($size_min, $size_max))) {
+                                $sizes[] = $l;
+                                break;
+                            }
+                        }
+                        //} else {
+                        //    $sizes[] = $props['attributes'][6]['value'];
+                        // }
+                        if (!empty($sizes[0])) {
+                            $result['attributes'][99999] = [
+                                'id' => 99999,
+                                'name' => 'Размер обуви',
+                                'value' => $sizes[0]
+                            ];
+                        }
                     }
+                    $result['attributes'][9998] = [
+                        'id' => 9998,
+                        'name' => 'Тип взуття',
+                        'value' => $cat['name_uk'],
+                        'descriptions' => [
+                            [
+                                'code' => 'ru',
+                                'name' => 'Тип обуви',
+                                'value' => $cat['name_ru'],
+                            ],
+                            [
+                                'code' => 'uk',
+                                'name' => 'Тип взуття',
+                                'value' => $cat['name_uk'],
+                            ]
+                        ]
+                    ];
+                } elseif ($result['type_id'] == $this->settings->clothes_type) {
+                    $result['attributes'][9997] = [
+                        'id' => 9997,
+                        'name' => 'Тип одягу',
+                        'value' => $cat['name_uk'],
+                        'descriptions' => [
+                            [
+                                'code' => 'ru',
+                                'name' => 'Тип одежды',
+                                'value' => $cat['name_ru'],
+                            ],
+                            [
+                                'code' => 'uk',
+                                'name' => 'Тип одягу',
+                                'value' => $cat['name_uk'],
+                            ]
+                        ]
+                    ];
+                } elseif ($result['type_id'] == $this->settings->bags_type) {
+                    //add filter size bags
+                } else { //accessories
+                    $result['attributes'][9996] = [
+                        'id' => 9996,
+                        'name' => 'Тип аксесуарів',
+                        'value' => $cat['name_uk'],
+                        'descriptions' => [
+                            [
+                                'code' => 'ru',
+                                'name' => 'Тип аксессуаров',
+                                'value' => $cat['name_ru'],
+                            ],
+                            [
+                                'code' => 'uk',
+                                'name' => 'Тип аксесуарів',
+                                'value' => $cat['name_uk'],
+                            ]
+                        ]
+                    ];
+                }
+                if ($product['category']['id'] == self::CATEGORY_CLOTHES_ACCESSORIES) {
+
+                    if (in_array($cat['id'], $this->categories_clothes) && $this->settings->clothes_type) { //Одежда
+                        $result['type_id'] = $this->settings->clothes_type;
+                        $result['unit'] = 4;//упаковка
+                        if ($this->settings->structure_clothes == 1) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->clothes_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $sex,
+                                'name_ru' => $sex
+                            ];
+                        } elseif ($this->settings->structure_clothes == 2) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->clothes_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $sex,
+                                'name_ru' => $sex
+                            ];
+                            $result['categories'][2] = [
+                                'name_uk' => $cat['name_uk'],
+                                'name_ru' => $cat['name_ru'],
+                                'id' => $cat['id']
+                            ];
+                        } elseif ($this->settings->structure_clothes == 3) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->clothes_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $cat['name_uk'],
+                                'name_ru' => $cat['name_ru'],
+                                'id' => $cat['id']
+                            ];
+                        } elseif ($this->settings->structure_clothes == 4) {
+                            $result['categories'][0] = [
+                                'name_uk' => $sex,
+                                'name_ru' => $sex
+                            ];
+                        } elseif ($this->settings->structure_clothes == 5) {
+                            $result['categories'][0] = [
+                                'name_uk' => $sex,
+                                'name_ru' => $sex
+                            ];
+                            $result['categories'][1] = [
+                                'name_uk' => $cat['name_uk'],
+                                'name_ru' => $cat['name_ru'],
+                                'id' => $cat['id']
+                            ];
+                        } else {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->clothes_key;
+                        }
+
+                    } elseif (in_array($cat['id'], $this->categories_bags) && $this->settings->bags_type) { //сумки
+                        $result['type_id'] = $this->settings->bags_type;
+                        $result['unit'] = 4;//упаковка
+                        if ($this->settings->structure_bags == 1) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->bags_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $sex,
+                                'name_ru' => $sex
+                            ];
+                        } elseif ($this->settings->structure_bags == 2) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->bags_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $sex,
+                                'name_ru' => $sex
+                            ];
+                            $result['categories'][2] = [
+                                'name_uk' => $cat['name_uk'],
+                                'name_ru' => $cat['name_ru'],
+                                'id' => $cat['id']
+                            ];
+                        } elseif ($this->settings->structure_bags == 3) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->bags_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $cat['name_uk'],
+                                'name_ru' => $cat['name_ru'],
+                                'id' => $cat['id']
+                            ];
+                        } else {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->bags_key;
+                        }
+                        //} elseif ($this->settings->accessories_type) { //аксессуары
+                        //    $result['type_id'] = $this->settings->accessories_type;
+                        //     $result['categories'][0] = 'Other';
+                    } else {
+                        if($this->settings->accessories_type){
+                            $result['type_id'] = $this->settings->accessories_type;
+                            $result['unit'] = 4;//упаковка
+                        }else{
+                            $result['success'] = false;
+                            $result['error'][] = 'Accessories disabled!';
+                        }
+
+
+                        /*if ($this->settings->structure_accessories == 1) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->accessories_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $sex,
+                                'name_ru' => $sex
+                            ];
+                        } elseif ($this->settings->structure_accessories == 2) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->accessories_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $sex,
+                                'name_ru' => $sex
+                            ];
+                            $result['categories'][2] = [
+                                'name_uk' => $cat['name_uk'],
+                                'name_ru' => $cat['name_ru']
+                            ];*/
+                        if ($this->settings->structure_accessories == 3) {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->accessories_key;
+                            $result['categories'][1] = [
+                                'name_uk' => $cat['name_uk'],
+                                'name_ru' => $cat['name_ru'],
+                                'id' => $cat['id']
+                            ];
+                        } else {
+                            $result['categories'][0] = Yii::$app->getModule('forsage')->accessories_key;
+                        }
+
+
+                        //$result['success'] = false;
+                        //$result['error'][] = 'Type access denied';
+                    }
+
+                } elseif ($product['category']['id'] == self::CATEGORY_BOOTS) {
+                    //echo 'SHOES';die;
+                    //$result['categories'][0] = 'Shoes/???'; // . $result['categories'][0]
+                    // $result['categories'][0] = 'Shoes/' . $result['categories'][0];
+                    // $result['categories'][0] = $result['categories'][0];
                 }
 
             } else {
@@ -714,14 +1050,12 @@ class ForsageStudio extends Component
                 self::log('Unknown product category child error');
             }
         }
+        if (!isset($result['images'])) {
+            $result['success'] = false;
+            $result['error'][] = 'Unknown product images error';
+            // self::log('Unknown product images error');
+        }
 
-
-        //if (!isset($result['price'])) {
-        //    $result['ignoreFlag'] = true;
-        //     $result['error'][] = 'Нет цены';
-        // }
-
-        //  return (!isset($result['error']))?$result:false;
         return $result;
     }
 
