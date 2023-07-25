@@ -463,7 +463,7 @@ class ForsageStudio extends Component
         foreach ($result as $key => $name) {
             $test = explode(':', trim($name));
             if (count($test) > 1) {
-                $pathName .= '/' . trim($test[2]);
+                $pathName .= '/' . trim($test[0]);
                 $pathName2 .= '/' . trim($test[1]);
             } else {
                 $pathName .= '/' . trim($name);
@@ -752,14 +752,14 @@ class ForsageStudio extends Component
                                     $result['categories'][2] = [
                                         'name_uk' => $cat['name_uk'],
                                         'name_ru' => $cat['name_ru'],
-                                        'id' => $cat['id']
+                                        //'id' => $cat['id']
                                     ];
                                 } elseif ($this->settings->structure_shoes == 3) {
                                     $result['categories'][0] = 'Shoes';
                                     $result['categories'][1] = [
                                         'name_uk' => $cat['name_uk'],
                                         'name_ru' => $cat['name_ru'],
-                                        'id' => $cat['id']
+                                        //'id' => $cat['id']
                                     ];
                                 } elseif ($this->settings->structure_shoes == 4) {
                                     $result['categories'][0] = $sex;
@@ -768,7 +768,7 @@ class ForsageStudio extends Component
                                     $result['categories'][1] = [
                                         'name_uk' => $cat['name_uk'],
                                         'name_ru' => $cat['name_ru'],
-                                        'id' => $cat['id']
+                                        //'id' => $cat['id']
                                     ];
                                 } else {
                                     $result['categories'][0] = 'Shoes';
@@ -934,14 +934,14 @@ class ForsageStudio extends Component
                             $result['categories'][2] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                'id' => $cat['id']
+                                //'id' => $cat['id']
                             ];
                         } elseif ($this->settings->structure_clothes == 3) {
                             $result['categories'][0] = Yii::$app->getModule('forsage')->clothes_key;
                             $result['categories'][1] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                'id' => $cat['id']
+                                //'id' => $cat['id']
                             ];
                         } elseif ($this->settings->structure_clothes == 4) {
                             $result['categories'][0] = [
@@ -956,7 +956,7 @@ class ForsageStudio extends Component
                             $result['categories'][1] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                'id' => $cat['id']
+                                //'id' => $cat['id']
                             ];
                         } else {
                             $result['categories'][0] = Yii::$app->getModule('forsage')->clothes_key;
@@ -980,14 +980,14 @@ class ForsageStudio extends Component
                             $result['categories'][2] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                'id' => $cat['id']
+                                //'id' => $cat['id']
                             ];
                         } elseif ($this->settings->structure_bags == 3) {
                             $result['categories'][0] = Yii::$app->getModule('forsage')->bags_key;
                             $result['categories'][1] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                'id' => $cat['id']
+                                //'id' => $cat['id']
                             ];
                         } else {
                             $result['categories'][0] = Yii::$app->getModule('forsage')->bags_key;
