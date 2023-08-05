@@ -81,7 +81,7 @@ class ForsageStudio extends Component
         $this->_eav = []; //clear eav for elastic
 
         $props = $this->getProductProps($this->product);
-//print_r($props);die;
+
         //$errors = (isset($props['error'])) ? true : false;
         $model = Product::findOne(['forsage_id' => $this->product['id']]);
 
@@ -456,41 +456,40 @@ class ForsageStudio extends Component
         /** @var \panix\engine\behaviors\nestedsets\NestedSetsBehavior $model */
 
 
-        $pathName = '';
-        $pathName2 = '';
+        $pathNameUA = '';
+        $pathNameRU = '';
         $tree = [];
 
         foreach ($result as $key => $name) {
-            $test = explode(':', trim($name));
-            if (count($test) > 1) {
-                $pathName .= '/' . trim($test[0]);
-                $pathName2 .= '/' . trim($test[1]);
+            $params = explode(':', trim($name));
+            if (count($params) > 1) {
+                $pathNameUA .= '/' . trim($params[0]);
+                $pathNameRU .= '/' . trim($params[1]);
             } else {
-                $pathName .= '/' . trim($name);
-                $pathName2 .= '/' . trim($name);
+                $pathNameUA .= '/' . trim($name);
+                $pathNameRU .= '/' . trim($name);
             }
-
             $tree[] = [
-                substr($pathName, 1),
-                substr($pathName2, 1)
+                substr($pathNameUA, 1),
+                substr($pathNameRU, 1),
+                //(isset($params[2])) ? $params[2] : false //NEW
             ];
         }
-
         foreach ($tree as $key => $lang) {
 
             $objectRu = explode('/', trim($lang[1]));
             $objectUk = explode('/', trim($lang[0]));
-            $model = Category::find()->where(['path_hash' => md5(mb_strtolower($lang[1]))])->one();
+            $hash = md5(mb_strtolower($lang[1]));
+            $model = Category::find()->where(['path_hash' => $hash])->one();
 
             if (!$model) {
                 $model = new Category;
                 $model->name_uk = end($objectUk);
                 $model->name_ru = end($objectRu);
                 $model->slug = CMS::slug($model->name_ru);
-                //print_r($model->name_uk);
-                //print_r($model->name_ru);
+                $model->path_hash=$hash; //NEW remove category modal this
                 $model->appendTo($parent);
-            }else{
+            } else {
                 $model->name_uk = end($objectUk);
                 $model->name_ru = end($objectRu);
             }
@@ -752,14 +751,14 @@ class ForsageStudio extends Component
                                     $result['categories'][2] = [
                                         'name_uk' => $cat['name_uk'],
                                         'name_ru' => $cat['name_ru'],
-                                        //'id' => $cat['id']
+                                        'id' => $cat['id']
                                     ];
                                 } elseif ($this->settings->structure_shoes == 3) {
                                     $result['categories'][0] = 'Shoes';
                                     $result['categories'][1] = [
                                         'name_uk' => $cat['name_uk'],
                                         'name_ru' => $cat['name_ru'],
-                                        //'id' => $cat['id']
+                                        'id' => $cat['id']
                                     ];
                                 } elseif ($this->settings->structure_shoes == 4) {
                                     $result['categories'][0] = $sex;
@@ -768,7 +767,7 @@ class ForsageStudio extends Component
                                     $result['categories'][1] = [
                                         'name_uk' => $cat['name_uk'],
                                         'name_ru' => $cat['name_ru'],
-                                        //'id' => $cat['id']
+                                        'id' => $cat['id']
                                     ];
                                 } else {
                                     $result['categories'][0] = 'Shoes';
@@ -934,14 +933,14 @@ class ForsageStudio extends Component
                             $result['categories'][2] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                //'id' => $cat['id']
+                                'id' => $cat['id']
                             ];
                         } elseif ($this->settings->structure_clothes == 3) {
                             $result['categories'][0] = Yii::$app->getModule('forsage')->clothes_key;
                             $result['categories'][1] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                //'id' => $cat['id']
+                                'id' => $cat['id']
                             ];
                         } elseif ($this->settings->structure_clothes == 4) {
                             $result['categories'][0] = [
@@ -956,7 +955,7 @@ class ForsageStudio extends Component
                             $result['categories'][1] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                //'id' => $cat['id']
+                                'id' => $cat['id']
                             ];
                         } else {
                             $result['categories'][0] = Yii::$app->getModule('forsage')->clothes_key;
@@ -996,10 +995,10 @@ class ForsageStudio extends Component
                         //    $result['type_id'] = $this->settings->accessories_type;
                         //     $result['categories'][0] = 'Other';
                     } else {
-                        if($this->settings->accessories_type){
+                        if ($this->settings->accessories_type) {
                             $result['type_id'] = $this->settings->accessories_type;
                             $result['unit'] = 4;//упаковка
-                        }else{
+                        } else {
                             $result['success'] = false;
                             $result['error'][] = 'Accessories disabled!';
                         }
