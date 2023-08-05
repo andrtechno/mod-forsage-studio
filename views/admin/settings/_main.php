@@ -15,6 +15,7 @@ use yii\helpers\ArrayHelper;
 
 <?= $form->field($model, 'out_stock_delete')->checkbox(); ?>
 <?= $form->field($model, 'brand')->checkbox(); ?>
+<?= $form->field($model, 'tm')->checkbox(); ?>
 <?= $form->field($model, 'apikey')->textarea(); ?>
 <?php //echo $form->field($model, 'accessories_type')->dropdownList($types, ['prompt' => '---'])->hint($model::t('TYPE_HINT')); ?>
 <?= $form->field($model, 'hook_key')->textInput()->hint(((Yii::$app->request->isSecureConnection) ? 'https://' : 'http://') . Yii::$app->request->serverName . '/forsage/webhook/' . $model->hook_key); ?>

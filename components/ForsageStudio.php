@@ -247,6 +247,29 @@ class ForsageStudio extends Component
         }
 
 
+        if ($this->settings->tm && isset($this->product['brand'])) {
+            if ($this->product['brand']['name'] != 'No brand') {
+                $props['attributes'][9994] = [
+                    'id' => 9994,
+                    'name' => 'Торговая марка',
+                    'value' => $this->product['brand']['name'],
+                    'descriptions' => [
+                        [
+                            'code' => 'ru',
+                            'name' => 'Торговая марка',
+                            'value' => $this->product['brand']['name'],
+                        ],
+                        [
+                            'code' => 'uk',
+                            'name' => 'Торгова марка',
+                            'value' => $this->product['brand']['name'],
+                        ]
+                    ]
+                ];
+            }
+        }
+
+
         if (!$model->save(false)) {
             return false;
         }
@@ -487,7 +510,7 @@ class ForsageStudio extends Component
                 $model->name_uk = end($objectUk);
                 $model->name_ru = end($objectRu);
                 $model->slug = CMS::slug($model->name_ru);
-                $model->path_hash=$hash; //NEW remove category modal this
+                $model->path_hash = $hash; //NEW remove category modal this
                 $model->appendTo($parent);
             } else {
                 $model->name_uk = end($objectUk);

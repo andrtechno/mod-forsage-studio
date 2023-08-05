@@ -18,5 +18,6 @@ return [
     'STRUCTURE_CLOTHES' => 'Structure of the clothes',
     'STRUCTURE_BAGS' => 'Structure of the bags',
     'STRUCTURE_ACCESSORIES' => 'Structure of accessories',
-    'PRODUCT_NAME_TPL' => 'Product name template'
+    'PRODUCT_NAME_TPL' => 'Product name template',
+    'TM' => 'Activate feature TM (brand)'
 ];

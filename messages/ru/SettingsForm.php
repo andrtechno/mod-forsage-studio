@@ -18,5 +18,6 @@ return [
     'STRUCTURE_CLOTHES' => 'Структура одежды',
     'STRUCTURE_BAGS' => 'Структура сумок',
     'STRUCTURE_ACCESSORIES' => 'Структура аксессуаров',
-    'PRODUCT_NAME_TPL' => 'Шаблон название товара'
+    'PRODUCT_NAME_TPL' => 'Шаблон название товара',
+    'TM' => 'Активировать характеристику TM (бренд)'
 ];

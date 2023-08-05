@@ -27,9 +27,9 @@ class SettingsForm extends SettingsModel
     public $structure_shoes;
     public $structure_clothes;
     public $structure_bags;
-
     public $structure_accessories;
     public $product_name_tpl;
+    public $tm;
 
     public function rules()
     {
@@ -39,7 +39,7 @@ class SettingsForm extends SettingsModel
             [['boots_type', 'clothes_type', 'accessories_type', 'structure_shoes', 'structure_clothes', 'structure_bags', 'structure_accessories'], 'integer'],
             //[['boots_type', 'clothes_type', 'bags_type', 'accessories_type', 'categories_shoes'], 'default'],
             [['apikey', 'hook_key', 'categories_clothes', 'categories_bags', 'categories_shoes', 'product_name_tpl'], 'string'],
-            [['out_stock_delete', 'brand'], 'boolean'],
+            [['out_stock_delete', 'brand', 'tm'], 'boolean'],
             ['apikey', 'match', 'pattern' => "/^[a-zA-Z0-9\._\-]+$/u"],
             ['hook_key', 'match', 'pattern' => "/^[a-zA-Z0-9]+$/u", 'message' => 'Только буквы и цифры'],
             // [['categories_shoes'], 'safe'],
@@ -65,6 +65,7 @@ class SettingsForm extends SettingsModel
             'boots_type' => '',
             'accessories_type' => '',
             'brand' => true,
+            'tm' => true,
             'product_name_tpl' => '{category} {supplier} {sku}',
             'categories_shoes' => '',
             'categories_bags' => '18,40,10,41,175,42,49,35,106,63,50',
