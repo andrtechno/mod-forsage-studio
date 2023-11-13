@@ -6,8 +6,10 @@ use panix\engine\CMS;
 use panix\mod\banner\models\BannerSearch;
 use panix\mod\forsage\components\ForsageStudio;
 use panix\mod\forsage\components\ProductByIdQueue;
+use panix\mod\forsage\components\ProductDeleteQueue;
 use panix\mod\forsage\components\ProductIdQueue;
 use panix\mod\forsage\models\ChangesForm;
+use panix\mod\shop\models\Product;
 use panix\mod\shop\models\search\SupplierSearch;
 use panix\mod\shop\models\Supplier;
 use Yii;
@@ -110,7 +112,7 @@ class DefaultController extends AdminController
                 }
                 $total = count($ids);
                 Yii::$app->session->setFlash('success', ChangesForm::t('SUCCESS_MSG', [
-                    $total, date('Y-m-d H:i',$start_date), date('Y-m-d H:i',$end_date)
+                    $total, date('Y-m-d H:i', $start_date), date('Y-m-d H:i', $end_date)
                 ]));
                 return $this->refresh();
             }
@@ -131,7 +133,6 @@ class DefaultController extends AdminController
             Yii::$app->session->setFlash('success', Yii::t('forsage/default', 'RELOAD_SUPPLIER', [
                 count($products),
                 $name
-
             ]));
             foreach ($products as $product) {
                 $job = new ProductByIdQueue(['id' => $product, 'images' => true, 'attributes' => true]);
@@ -162,4 +163,43 @@ class DefaultController extends AdminController
         return $this->redirect('suppliers');
     }
 
+
+    public function actionSupplierDelete($id)
+    {
+        $supplier = Supplier::findOne(['forsage_id' => $id]);
+
+        $table = Product::tableName();
+        $products = Product::getDb()->createCommand("SELECT id FROM {$table} WHERE supplier_id={$supplier->id}")->queryAll();
+
+        $rows = [];
+        $queue = Yii::$app->queue;
+        $count = count($products);
+        if ($products) {
+            foreach ($products as $product) {
+                $job = new ProductDeleteQueue(['id' => $product['id']]);
+                $rows[] = [
+                    'default',
+                    $queue->serializer->serialize($job),
+                    time(),
+                    120,
+                    1024
+                ];
+            }
+
+            Yii::$app->db->createCommand()->batchInsert($queue->tableName, [
+                'channel',
+                'job',
+                'pushed_at',
+                'ttr',
+                'priority'
+            ], $rows)->execute();
+
+            if ($supplier && $count) {
+                $supplier->delete();
+            }
+
+            Yii::$app->session->setFlash('success', Yii::t('forsage/default', 'Deleted success ' . $count));
+        }
+        return $this->redirect('suppliers');
+    }
 }

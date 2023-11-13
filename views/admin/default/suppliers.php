@@ -2,10 +2,12 @@
 
 use yii\widgets\Pjax;
 use panix\engine\Html;
+use panix\engine\grid\GridView;
+use panix\mod\shop\models\Supplier;
 
 Pjax::begin();
 
-echo \panix\engine\grid\GridView::widget([
+echo GridView::widget([
     'tableOptions' => ['class' => 'table table-striped'],
     'dataProvider' => $dataProvider,
     //'filterModel' => $searchModel,
@@ -22,24 +24,24 @@ echo \panix\engine\grid\GridView::widget([
             'contentOptions' => ['class' => 'text-center'],
             'format' => 'raw',
             'value' => function ($model) {
-                $supplier = \panix\mod\shop\models\Supplier::findOne(['forsage_id' => $model['id']]);
+                $supplier = Supplier::findOne(['forsage_id' => $model['id']]);
                 if ($supplier) {
                     return Html::a($supplier->productsCount, ['/admin/shop/product', 'ProductSearch[supplier_id]' => $supplier->id]);
                 }
-                //return $model->productsCount;
             }
         ],
         'DEFAULT_CONTROL' => [
             'class' => 'panix\engine\grid\columns\ActionColumn',
-            'template' => '{reload}',
+            'template' => '{reload}{delete}',
             'buttons' => [
-                'reload' => function ($url, $model) {
-                    //if ($model->forsage_id) {
-                    //    return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model->forsage_id], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
-                    //}
-
+                'delete' => function ($url, $model) {
                     if ($model['id']) {
-                        return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model['id'],'name'=>$model['company']], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
+                        return Html::a(Html::icon('delete'), ['supplier-delete', 'id' => $model['id']], ['data-confirm'=>'Удалить товары','title' => 'Delete products', 'class' => 'btn btn-sm btn-outline-danger', 'data-pjax' => 0]);
+                    }
+                },
+                'reload' => function ($url, $model) {
+                    if ($model['id']) {
+                        return Html::a(Html::icon('refresh'), ['supplier-load-products', 'id' => $model['id'], 'name' => $model['company']], ['title' => 'Reload products', 'class' => 'btn btn-sm btn-outline-primary', 'data-pjax' => 0]);
                     }
                 }
             ]
