@@ -2,6 +2,7 @@
 
 namespace panix\mod\forsage\commands;
 
+use panix\mod\forsage\components\FixSizeQueue;
 use panix\mod\forsage\components\ProductByIdQueue;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Brand;
@@ -42,14 +43,53 @@ class DevController extends ConsoleController
      */
     private $fs;
 
-    //840690
-    public function actionPush($id){
-        //Yii::$app-
+    public function actionPush($id)
+    {
         Yii::$app->queue->push(new ProductByIdQueue([
             'id' => $id,
         ]));
 
     }
+
+    public function actionFixer()
+    {
+
+        $products = Product::find()->groupBy(['main_category_id'])->asArray()->limit(50)->offset(0)->all();
+
+        foreach ($products as $p) {
+
+
+            if ($p['forsage_id']) {
+
+                $product = $this->fs->getProduct($p['forsage_id']);
+                if ($product) {
+                    $props = $product->getProductProps($product->product);
+
+                    $external_hash = '';
+                    foreach ($props['categories'] as $names) {
+                        if (is_array($names)) {
+                            if (isset($names['id'])) {
+                                $external_hash .= '/' . trim($names['id']);
+                            } else {
+                                $external_hash .= '/' . trim($names['name_uk']);
+                            }
+                        } else {
+                            $external_hash .= '/' . trim($names);
+                        }
+
+                    }
+
+                    $external_hash = strtolower($external_hash);
+                    $categry = Category::find()->where(['id' => $p['main_category_id']])->one();
+                    $categry->external_id = $external_hash;
+                    $categry->saveNode(false);
+                } else {
+                    echo $p['forsage_id'] . PHP_EOL;
+                }
+            }
+        }
+    }
+
     public function beforeAction($action)
     {
         if (!extension_loaded('intl')) {
@@ -73,57 +113,17 @@ class DevController extends ConsoleController
         Yii::$app->db->createCommand()->update('{{%queue}}', ['done_at' => NULL, 'attempt' => NULL, 'reserved_at' => NULL], '')->execute();
     }
 
-    public function _actionRefbooks()
+    public function actionRefbooks()
     {
         $refbooks = $this->fs->getRefbookCharacteristics();
+
         foreach ($refbooks as $ref) {
-            $attribute = Attribute::findOne(['title_ru' => $ref['name']]);
+            //$attribute = Attribute::findOne(['title_ru' => $ref['name']]);
+            print_r($ref);
             if ($attribute) {
 
-                if ($ref['descriptions']) {
-                    $attribute->title_uk = $ref['descriptions'][1]['name'];
-                    $attribute->title_ru = $ref['descriptions'][0]['name'];
-                } else {
-                    $attribute->title_uk = $ref['name'];
-                    $attribute->title_ru = $ref['name'];
-                }
-
-                $attribute->forsage_id = $ref['id'];
-                $attribute->save(false);
-
-                /*foreach ($ref['values'] as $value) {
-                    $option = AttributeOption::findOne(['value' => $value['value']]);
-                    if ($option) {
-                        if (isset($value['descriptions'][1])) {
-                            $option->value = $value['descriptions'][0]['name'];
-                            $option->value_uk = (isset($value['descriptions'][1])) ? $value['descriptions'][1]['name'] : $value['descriptions'][0]['name'];
-                            //$option->forsage_id = $value['id'];
-                            $option->save(false);
-
-                        } else {
-                            $option->value = $value['value'];
-                            $option->value_uk = $value['value'];
-                            //$option->forsage_id = $value['id'];
-                            $option->save(false);
-                        }
-                    }
-                }*/
             }
-        }
-    }
-
-    public function actionNoImg()
-    {
-        $products = Product::find()->limit(10000)->offset(40000)->all();
-        foreach ($products as $product) {
-            if (!$product->getImages()->count()) {
-                //echo Url::to($product->getUrl()).PHP_EOL;
-                $ff = $this->fs->getProduct($product->forsage_id);
-
-                if ($ff) {
-                    $ff->execute();
-                }
-            }
+            die;
         }
     }
 
@@ -141,7 +141,6 @@ class DevController extends ConsoleController
 
             }
         }
-
 
         $filesAssets = glob(Yii::getAlias('@web/assets/product/*'));
         foreach ($filesAssets as $fileAsset) {
@@ -206,6 +205,36 @@ class DevController extends ConsoleController
         } else {
             echo 'YII_DEBUG disabled!.';
         }
+    }
+
+    public function actionFixSize($page = 0)
+    {
+        $products = Product::find()->offset($page)->limit(500)->orderBy(['id' => SORT_ASC])->asArray()->all();
+        $rows = [];
+        $queue = Yii::$app->queue;
+        foreach ($products as $product) {
+            if (isset($product['forsage_id'])) {
+                $job = new FixSizeQueue(['id' => $product['forsage_id']]);
+                if (Yii::$app->db->driverName == 'pgsql') {
+                    $queue->push($job);
+                } else {
+                    $rows[] = [
+                        'default',
+                        $queue->serializer->serialize($job),
+                        time(),
+                        120,
+                        1024
+                    ];
+                }
+            }
+        }
+        Yii::$app->db->createCommand()->batchInsert($queue->tableName, [
+            'channel',
+            'job',
+            'pushed_at',
+            'ttr',
+            'priority'
+        ], $rows)->execute();
     }
 
     /**

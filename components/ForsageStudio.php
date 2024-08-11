@@ -297,7 +297,25 @@ class ForsageStudio extends Component
             }
         }
 
-        if (method_exists($model, 'elastic')) {
+        if (Yii::$app->db->driverName == 'pgsql') {
+            $eavkeys = [];
+            $slugToId = Attribute::slugToId();
+            $eav = $model->getEavAttributes();
+            foreach ($eav as $key => $e) {
+                if (is_array($e)) {
+                    foreach ($e as $o) {
+                        $key = $slugToId[$key];
+                        $eavkeys[$key] = $o;
+                    }
+                }
+            }
+
+            $model->options = $eavkeys;
+            $model->save(false);
+        }
+
+
+        if (method_exists($model, 'elastic') && Yii::$app->has('elasticsearch')) {
             $eav = $model->getEavAttributes();
             $eavkeys = [];
             foreach ($eav as $e) {
@@ -305,12 +323,34 @@ class ForsageStudio extends Component
                     foreach ($e as $o) {
                         $eavkeys[] = $o;
                     }
-                } else {
-                    Yii::info('error eav by FID' . $model->forsage_id . ' ID ' . $model->id, 'forsage');
                 }
             }
             $model->elastic($eavkeys);
         }
+        return true;
+    }
+
+
+    public function execute_fixsize()
+    {
+        $this->_eav = []; //clear eav for elastic
+
+        $props = $this->getProductProps($this->product);
+
+        //$errors = (isset($props['error'])) ? true : false;
+        $model = Product::findOne(['forsage_id' => $this->product['id']]);
+
+
+        if (!$model && $this->product['quantity'] == 0) {
+            self::log('Product success false quantity ' . $this->product['quantity']);
+            return false;
+        }
+
+
+        if ($model && isset($props['attributes'])) {
+            $this->attributeDataFixSize($model, $props['attributes'][6]);
+        }
+
         return true;
     }
 
@@ -405,22 +445,26 @@ class ForsageStudio extends Component
      */
     private function generateCategory($index = 0)
     {
-        // print_r($this->product);
         $categoryName = '';
         if ($this->product['category']) {
             if (isset($this->product['category']['descriptions'])) {
                 $categoryName = $this->product['category']['descriptions'][$index]['name'];
                 if (isset($this->product['category']['child']['descriptions'])) {
-                    $categoryName .= '/' . $this->product['category']['child']['descriptions'][$index]['name'];
+                    if (isset($this->product['category']['child']['descriptions'][$index])) {
+                        $categoryName .= '/' . $this->product['category']['child']['descriptions'][$index]['name'];
+                    } else {
+                        $categoryName .= '/' . $this->product['category']['child']['name'];
+                    }
                 }
             } else {
                 $categoryName = $this->product['category']['name'];
-                if (isset($this->product['category']['child'])) {
+                if (isset($this->product['category']['child']['name'])) {
                     $categoryName .= '/' . $this->product['category']['child']['name'];
                 }
             }
 
         }
+        // print_r($categoryName);die;
         return $categoryName;
     }
 
@@ -492,13 +536,30 @@ class ForsageStudio extends Component
                 $pathNameUA .= '/' . trim($name);
                 $pathNameRU .= '/' . trim($name);
             }
+
             $tree[] = [
                 substr($pathNameUA, 1),
                 substr($pathNameRU, 1),
                 //(isset($params[2])) ? $params[2] : false //NEW
             ];
         }
+
+
+        $external_hash = '';
+
         foreach ($tree as $key => $lang) {
+            if (is_array($props['categories'][$key])) {
+                if (isset($props['categories'][$key]['id'])) {
+                    $external_hash .= '/' . trim($props['categories'][$key]['id']);
+                } else {
+                    $external_hash .= '/' . trim($props['categories'][$key]['name_uk']);
+                }
+            } else {
+                $external_hash .= '/' . trim($props['categories'][$key]);
+            }
+
+            $external_hash = strtolower($external_hash);
+
 
             $objectRu = explode('/', trim($lang[1]));
             $objectUk = explode('/', trim($lang[0]));
@@ -511,15 +572,19 @@ class ForsageStudio extends Component
                 $model->name_ru = end($objectRu);
                 $model->slug = CMS::slug($model->name_ru);
                 $model->path_hash = $hash; //NEW remove category modal this
+                $model->external_id = $external_hash;
+                $model->created_at = time();
                 $model->appendTo($parent);
             } else {
-                $model->name_uk = end($objectUk);
-                $model->name_ru = end($objectRu);
+               // $model->name_uk = end($objectUk);
+               // $model->name_ru = end($objectRu);
+                $model->external_id = $external_hash;
+                $model->saveNode(false);
             }
+           // echo $model->name_uk;
             $parent = $model;
             $level++;
         }
-
 
         // Cache category id
         if (isset($model)) {
@@ -575,8 +640,6 @@ class ForsageStudio extends Component
                 $attributeModel->select_many = 1;
                 //}
                 $attributeModel->save(false);
-
-
             }
 
             //foreach ($attributeValues as $attributeValue) {
@@ -584,7 +647,6 @@ class ForsageStudio extends Component
             $option = AttributeOption::find();
             //$option->joinWith('translations');
             $option->where(['attribute_id' => $attributeModel->id]);
-            //$option->andWhere([AttributeOptionTranslate::tableName() . '.value' => $attributeValue]);
             $option->andWhere(['value' => (isset($data['descriptions'][0]['value'])) ? $data['descriptions'][0]['value'] : $data['value']]);
             $opt = $option->one();
             if (!$opt)
@@ -598,6 +660,32 @@ class ForsageStudio extends Component
             $model->setEavAttributes($attrsdata, true);
         }
     }
+
+
+    private function attributeDataFixSize($model, $data)
+    {
+        $attrsdata = [];
+
+
+        $attributeModel = Attribute::findOne(['forsage_id' => $data['id']]);
+
+
+        $option = AttributeOption::find();
+        $option->where(['attribute_id' => $attributeModel->id]);
+        $option->andWhere(['value' => (isset($data['descriptions'][0]['value'])) ? $data['descriptions'][0]['value'] : $data['value']]);
+        $opt = $option->one();
+        if (!$opt)
+            $opt = $this->addOptionToAttribute($attributeModel->id, $data);
+
+        $attrsdata[$attributeModel->name][] = $opt->id;
+        $this->_eav[] = $opt->id;
+
+
+        if (!empty($attrsdata)) {
+            $model->setEavAttributes($attrsdata, true);
+        }
+    }
+
 
     public function addOptionToAttribute($attribute_id, $value)
     {
@@ -624,7 +712,7 @@ class ForsageStudio extends Component
         $result = false;
         $result['success'] = true;
         $cat = $this->getChildCategory($product);
-        // print_r($cat);die;
+
         $result['type_id'] = $this->getTypeId($product['category'], $cat);
         $result['unit'] = 3; //по умолчанию ящик
 
@@ -685,6 +773,7 @@ class ForsageStudio extends Component
                             $result['ukraine'] = true;
                         }
                     }
+
                     if ($characteristic['id'] == 47) { //Старая цена продажи
                         $result['price_old'] = str_replace(',', '.', trim($characteristic['value']));
                     }
@@ -699,23 +788,28 @@ class ForsageStudio extends Component
                             'name' => $characteristic['name'],
                             'value' => trim($characteristic['value'])
                         ];
-                        //$result['in_box'] = trim($characteristic['value']);
                     }
-                    // if ($characteristic['id'] == 39) { //Пол
 
-                    //  $result['sex'] = $characteristic['value'];
-
-                    // }
 
                     //attributes
                     if (!in_array($characteristic['id'], [1, 3, 13, 24, 25, 29, 33, 34, 35, 38, 46, 45, 47, 53])) {
-                        $result['attributes'][$characteristic['id']] = [
-                            'id' => $characteristic['id'],
-                            'name' => $characteristic['name'],
-                            'value' => trim($characteristic['value']),
-                            'descriptions' => $characteristic['descriptions'],
-                        ];
+                        if ($characteristic['id'] == 6) {
+                            $result['attributes'][$characteristic['id']] = [
+                                'id' => $characteristic['id'],
+                                'name' => $characteristic['name'],
+                                'value' => trim($characteristic['value']),
+                            ];
+                        } else {
+                            $result['attributes'][$characteristic['id']] = [
+                                'id' => $characteristic['id'],
+                                'name' => $characteristic['name'],
+                                'value' => trim($characteristic['value']),
+                                'descriptions' => $characteristic['descriptions'],
+                            ];
+                        }
+
                     }
+
                     if ($characteristic['id'] == 39) { //женщины, мужчины и дети (Пол)
                         //if (in_array($productData['type_id'], array(self::TYPE_BOOTS_KIDS, self::TYPE_BOOTS))) {
                         if ($product['category']['id'] == self::CATEGORY_BOOTS) {
@@ -1002,14 +1096,14 @@ class ForsageStudio extends Component
                             $result['categories'][2] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                //'id' => $cat['id']
+                                'id' => $cat['id']
                             ];
                         } elseif ($this->settings->structure_bags == 3) {
                             $result['categories'][0] = Yii::$app->getModule('forsage')->bags_key;
                             $result['categories'][1] = [
                                 'name_uk' => $cat['name_uk'],
                                 'name_ru' => $cat['name_ru'],
-                                //'id' => $cat['id']
+                                'id' => $cat['id']
                             ];
                         } else {
                             $result['categories'][0] = Yii::$app->getModule('forsage')->bags_key;
@@ -1335,9 +1429,13 @@ class ForsageStudio extends Component
             ])
             ->setData($params)
             ->send();
+
+
+       // echo '123';die;
         if ($response->isOk) {
             return $response->data;
         } else {
+            echo $response->content;die;
             return Json::decode($response->content);
         }
     }

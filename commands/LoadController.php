@@ -65,9 +65,11 @@ class LoadController extends ConsoleController
             $p->delete();
         }
         $product = $this->fs->getProduct($id);
-        //print_r($product->product);die;
+        print_r($product->product);die;
         //print_r($product->getProductProps($product->product));die;
         if ($product) {
+            echo 'exec';
+            die;
             $response = $product->execute();
         } else {
             echo 'no open product';

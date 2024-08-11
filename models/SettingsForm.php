@@ -5,6 +5,7 @@ namespace panix\mod\forsage\models;
 use Yii;
 use panix\engine\CMS;
 use panix\engine\SettingsModel;
+use yii\base\Exception;
 
 class SettingsForm extends SettingsModel
 {
@@ -92,37 +93,43 @@ class SettingsForm extends SettingsModel
 
         //if ($categories === false) {
         // $data is not found in cache, calculate it from scratch
-        $categories = $fs->getCategories(1);
-        $result = [];
-        if ($categories) {
-            foreach ($categories as $category) {
-                $name = $category['name'];
-                if (isset($category['descriptions'])) {
-                    if (Yii::$app->language == 'ru') {
-                        if (isset($category['descriptions'][0])) {
-                            $name = $category['descriptions'][0]['name'];
-                        }
-                    } else {
-                        if (isset($category['descriptions'][1])) {
-                            $name = $category['descriptions'][1]['name'];
+
+        try{
+            $categories = $fs->getCategories(1);
+            $result = [];
+            if ($categories) {
+                foreach ($categories as $category) {
+                    $name = $category['name'];
+                    if (isset($category['descriptions'])) {
+                        if (Yii::$app->language == 'ru') {
+                            if (isset($category['descriptions'][0])) {
+                                $name = $category['descriptions'][0]['name'];
+                            }
+                        } else {
+                            if (isset($category['descriptions'][1])) {
+                                $name = $category['descriptions'][1]['name'];
+                            }
                         }
                     }
+                    $result[] = [
+                        'id' => $category['id'],
+                        'text' => $name,
+                        'parent_id' => $category['parent_id'],
+                        'state' => ['opened' => true],
+                    ];
                 }
-                $result[] = [
-                    'id' => $category['id'],
-                    'text' => $name,
-                    'parent_id' => $category['parent_id'],
-                    'state' => ['opened' => true],
-                ];
             }
+            // store $data in cache so that it can be retrieved next time
+            //Yii::$app->cache->set("forsage-categories".Yii::$app->language, $result, 3600);
+
+            // }
+
+
+            return $this->buildTree($result, $parentId);
+        }catch(Exception $exception){
+            return [];
         }
-        // store $data in cache so that it can be retrieved next time
-        //Yii::$app->cache->set("forsage-categories".Yii::$app->language, $result, 3600);
 
-        // }
-
-
-        return $this->buildTree($result, $parentId);
 
     }
 
