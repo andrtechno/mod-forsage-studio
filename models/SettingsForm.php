@@ -31,11 +31,12 @@ class SettingsForm extends SettingsModel
     public $structure_accessories;
     public $product_name_tpl;
     public $tm;
+    public $push_delete;
 
     public function rules()
     {
         return [
-            [['hook_key', 'apikey', 'brand', 'product_name_tpl'], "required"],
+            [['hook_key', 'apikey', 'brand', 'product_name_tpl','push_delete'], "required"],
             //[['product_related_bilateral', 'group_attribute', 'smart_bc', 'smart_title'], 'boolean'],
             [['boots_type', 'clothes_type', 'accessories_type', 'structure_shoes', 'structure_clothes', 'structure_bags', 'structure_accessories'], 'integer'],
             //[['boots_type', 'clothes_type', 'bags_type', 'accessories_type', 'categories_shoes'], 'default'],
@@ -67,6 +68,7 @@ class SettingsForm extends SettingsModel
             'accessories_type' => '',
             'brand' => true,
             'tm' => true,
+            'push_delete'=>'out_stack',
             'product_name_tpl' => '{category} {supplier} {sku}',
             'categories_shoes' => '',
             'categories_bags' => '18,40,10,41,175,42,49,35,106,63,50',

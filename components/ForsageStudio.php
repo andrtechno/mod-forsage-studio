@@ -1409,6 +1409,28 @@ class ForsageStudio extends Component
         return false;
     }
 
+
+    public function getDelete($start = 3600, $end = 0)
+    {
+        $url = "https://forsage-studio.com/api/get_deleted/";
+        $params['start_date'] = $start;
+        $params['end_date'] = $end;
+        $params['page'] = 1;
+        //$params['quantity'] = 1;
+
+        $response = $this->conn_curl($url, $params);
+
+        if ($response) {
+            if (isset($response['success'])) {
+                if ($response['success'] == 'true') {
+                    //return $response['product_ids'];
+                    return $response;
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * @param $url
      * @param array $params

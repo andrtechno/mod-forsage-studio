@@ -168,14 +168,14 @@ class DefaultController extends AdminController
         $supplier = Supplier::findOne(['forsage_id' => $id]);
 
         $table = Product::tableName();
-        $products = Product::getDb()->createCommand("SELECT id FROM {$table} WHERE supplier_id={$supplier->id}")->queryAll();
+        $products = Product::getDb()->createCommand("SELECT forsage_id FROM {$table} WHERE supplier_id={$supplier->id}")->queryAll();
 
         $rows = [];
         $queue = Yii::$app->queue;
         $count = count($products);
         if ($products) {
             foreach ($products as $product) {
-                $job = new ProductDeleteQueue(['id' => $product['id']]);
+                $job = new ProductDeleteQueue(['forsage_id' => $product['forsage_id']]);
                 $rows[] = [
                     'default',
                     $queue->serializer->serialize($job),

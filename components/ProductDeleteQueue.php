@@ -9,14 +9,15 @@ use yii\queue\JobInterface;
 
 class ProductDeleteQueue extends BaseObject implements JobInterface
 {
-    public $id;
+    public $forsage_id;
 
     public function execute($queue)
     {
-        $product = Product::findOne($this->id);
+        $product = Product::findOne(['forsage_id' => $this->forsage_id]);
         if ($product) {
             $product->delete();
+            return true;
         }
-        return true;
+        return false;
     }
 }

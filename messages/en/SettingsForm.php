@@ -19,5 +19,6 @@ return [
     'STRUCTURE_BAGS' => 'Structure of the bags',
     'STRUCTURE_ACCESSORIES' => 'Structure of accessories',
     'PRODUCT_NAME_TPL' => 'Product name template',
-    'TM' => 'Activate feature TM (brand)'
+    'TM' => 'Activate feature TM (brand)',
+    'PUSH_DELETE' => 'Perform action on push Delete'
 ];

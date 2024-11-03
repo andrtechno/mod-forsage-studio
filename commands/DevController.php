@@ -42,6 +42,45 @@ class DevController extends ConsoleController
      * @var ForsageStudio
      */
     private $fs;
+    public function actionTestDel(){
+        $pts = $this->fs->getDelete(time() - 86400*100, time());
+        $ids=[];
+        foreach ($pts['items'] as $p){
+            $ids[]=$p['id'];
+        }
+
+        //$av = Product::updateAll(['availability'=>Product::STATUS_ARCHIVE],['forsage_id'=>array_column($pts['items'],'id')]);
+
+        $findTest= Product::find()
+            ->where(['forsage_id'=>array_column($pts['items'],'id')])
+            ->andWhere(['not in','availability',[Product::STATUS_ARCHIVE,Product::STATUS_OUT_STOCK]])
+            ->all();
+        foreach ($findTest as $t){
+            if($t->availability == Product::STATUS_IN_STOCK){
+                echo $t->forsage_id.PHP_EOL;
+            }
+        }
+       // echo $findTest;
+        //echo count($av);
+    }
+    public function actionCheckDel(){
+        $products = Product::find()
+            //->where(['not',['forsage_id'=>null]])
+            ->andWhere(['forsage_id'=>392009])
+            ->limit(10)
+            ->offset(0)
+            ->asArray()
+            ->all();
+        $delIds = [];
+        foreach ($products as $product){
+            $p = $this->fs->getProduct($product['forsage_id']);
+            print_r($p);die;
+            if(!$p){
+                $delIds[]=$product['forsage_id'];
+            }
+        }
+        echo count($delIds);
+    }
 
     public function actionPush($id)
     {

@@ -33,6 +33,7 @@ class m200917_193214_forsage_studio extends Migration
         $this->addColumn(Attribute::tableName(), 'forsage_id', $this->integer()->null());
         $this->addColumn(ProductImage::tableName(), 'forsage_id', $this->integer()->null());
         $this->addColumn(Category::tableName(), 'path_hash', $this->string(32)->null());
+        $this->addColumn(Category::tableName(), 'external_id', $this->string(50)->null());
 
         //$this->createIndex('forsage_id', Product::tableName(), 'forsage_id');
         //$this->createIndex('forsage_id', Supplier::tableName(), 'forsage_id');
@@ -52,6 +53,7 @@ class m200917_193214_forsage_studio extends Migration
         $this->dropColumn(Attribute::tableName(), 'forsage_id');
         $this->dropColumn(ProductImage::tableName(), 'forsage_id');
         $this->dropColumn(Category::tableName(), 'path_hash');
+        $this->dropColumn(Category::tableName(), 'external_id');
         if (Yii::$app->get('settings')) {
             Yii::$app->settings->clear('forsage');
         }
