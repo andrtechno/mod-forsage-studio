@@ -4,6 +4,7 @@ namespace panix\mod\forsage\commands;
 
 use panix\mod\forsage\components\FixSizeQueue;
 use panix\mod\forsage\components\ProductByIdQueue;
+use panix\mod\forsage\components\ProductDeleteQueue;
 use panix\mod\shop\models\AttributeOption;
 use panix\mod\shop\models\Brand;
 use panix\mod\shop\models\Category;
@@ -43,24 +44,33 @@ class DevController extends ConsoleController
      */
     private $fs;
     public function actionTestDel(){
-        $pts = $this->fs->getDelete(time() - 86400*100, time());
+        $pts = $this->fs->getDelete(time() - 86400*100, time() - 86400*90);
         $ids=[];
         foreach ($pts['items'] as $p){
+            $product = Product::find()->where(['forsage_id'=>$p['id']])->one();
+            if($product){
+                Yii::$app->queue->push(new ProductDeleteQueue([
+                    'forsage_id' => $p['id'],
+                ]));
+                echo $product->id;die;
+            }
             $ids[]=$p['id'];
         }
 
-        //$av = Product::updateAll(['availability'=>Product::STATUS_ARCHIVE],['forsage_id'=>array_column($pts['items'],'id')]);
 
-        $findTest= Product::find()
-            ->where(['forsage_id'=>array_column($pts['items'],'id')])
-            ->andWhere(['not in','availability',[Product::STATUS_ARCHIVE,Product::STATUS_OUT_STOCK]])
-            ->all();
+
+
+        $avIds = [];
         foreach ($findTest as $t){
-            if($t->availability == Product::STATUS_IN_STOCK){
-                echo $t->forsage_id.PHP_EOL;
+            if(in_array($t->availability, [Product::STATUS_IN_STOCK,Product::STATUS_PREORDER])){
+                //echo $t->forsage_id.PHP_EOL;
+                $avIds[] = $t->id;
             }
         }
-       // echo $findTest;
+
+        $av = Product::updateAll(['availability'=>Product::STATUS_OUT_STOCK],['id'=>$avIds]);
+
+        // echo $findTest;
         //echo count($av);
     }
     public function actionCheckDel(){
